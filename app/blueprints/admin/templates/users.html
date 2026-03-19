@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}用户管理 - CertMgr{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">用户管理 / User Management</h1>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">所有用户 / All Users</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>邮箱 / Email</th>
+                            <th>角色 / Role</th>
+                            <th>注册时间 / Registered</th>
+                            <th>操作 / Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.is_admin %}
+                                    <span class="badge bg-danger">管理员 / Admin</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">用户 / User</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if user.id != current_user.id %}
+                                    <button class="btn btn-sm btn-warning toggle-admin"
+                                            data-user-id="{{ user.id }}"
+                                            data-is-admin="{{ user.is_admin|lower }}">
+                                        {% if user.is_admin %}撤销管理员{% else %}设为管理员{% endif %}
+                                    </button>
+                                    <button class="btn btn-sm btn-danger delete-user"
+                                            data-user-id="{{ user.id }}">
+                                        删除 / Delete
+                                    </button>
+                                {% else %}
+                                    <span class="text-muted">当前用户 / Current</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">暂无用户 / No users yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle admin status
+    document.querySelectorAll('.toggle-admin').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const isAdmin = this.dataset.isAdmin === 'true';
+            if (!confirm(isAdmin ? '撤销管理员权限？' : '设为管理员？')) return;
+
+            fetch('/admin/users/' + userId + '/toggle-admin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                }
+            }).then(r => r.json()).then(data => {
+                if (data.success) location.reload();
+            });
+        });
+    });
+
+    // Delete user
+    document.querySelectorAll('.delete-user').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            if (!confirm('删除此用户？此操作不可撤销。')) return;
+
+            fetch('/admin/users/' + userId + '/delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                }
+            }).then(r => r.json()).then(data => {
+                if (data.success) location.reload();
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
