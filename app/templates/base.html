@@ -11,25 +11,42 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('certificates.list') if current_user.is_authenticated else url_for('auth.login') }}">
-                CertMgr - 证书管理系统
+            <a class="navbar-brand" href="{{ url_for('auth.home') if current_user.is_authenticated else url_for('auth.login') }}">
+                CertMgr
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto">
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">
-                            <span class="navbar-text me-3"> {{ current_user.email }}</span>
+                            <a class="nav-link" href="{{ url_for('auth.home') }}">首页</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('certificates.list') }}">我的证书</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('certificates.upload') }}">上传证书</a>
                         </li>
                         {% if current_user.is_admin %}
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('admin.list_users') }}">用户管理</a>
                         </li>
                         {% endif %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.logout') }}">退出</a>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                {{ current_user.email }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">个人中心</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">退出</a></li>
+                            </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">

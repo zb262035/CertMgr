@@ -1,11 +1,34 @@
 """Authentication routes: register, login, logout."""
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app.extensions import db
 from app.models.user import User
-from app.blueprints.auth.forms import RegistrationForm, LoginForm
+from app.blueprints.auth.forms import RegistrationForm, LoginForm, PasswordChangeForm
 
-auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+from app.blueprints.auth import auth_bp
+
+
+@auth_bp.route('/')
+@login_required
+def home():
+    """Home page after login."""
+    return render_template('home.html')
+
+
+@auth_bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    """User profile page for changing password."""
+    form = PasswordChangeForm()
+    if form.validate_on_submit():
+        if not current_user.check_password(form.current_password.data):
+            flash('当前密码错误 / Current password is incorrect.', 'danger')
+            return render_template('auth/profile.html', form=form)
+        current_user.set_password(form.new_password.data)
+        db.session.commit()
+        flash('密码修改成功 / Password changed successfully.', 'success')
+        return redirect(url_for('auth.profile'))
+    return render_template('auth/profile.html', form=form)
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -39,12 +62,15 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and user.check_password(form.password.data):
+            if user.is_disabled:
+                flash('账号已被禁用，请联系管理员 / Account is disabled. Please contact admin.', 'danger')
+                return render_template('auth/login.html', form=form)
             login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next')
             # Validate next page is safe (prevent open redirect)
             if next_page and next_page.startswith('/'):
                 return redirect(next_page)
-            return redirect(url_for('auth.login'))
+            return redirect(url_for('auth.home'))
         flash('邮箱或密码错误 / Invalid email or password.', 'danger')
     return render_template('auth/login.html', form=form)
 

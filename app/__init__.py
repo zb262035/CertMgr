@@ -32,6 +32,10 @@ def create_app(config_name='dev'):
     from app.blueprints.admin import admin_bp
     app.register_blueprint(admin_bp)
 
+    # Phase 2 stub - certificates blueprint (功能在 Phase 2 实现)
+    from app.blueprints.certificates import certificates_bp
+    app.register_blueprint(certificates_bp)
+
     # Import models to register them with SQLAlchemy
     from app.models import user
 

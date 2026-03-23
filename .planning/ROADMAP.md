@@ -22,6 +22,14 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 
 **Requirements / 需求**: AUTH-01, AUTH-02, CERT-03, CERT-11
 
+**Waves / 波次**:
+
+| Wave | 内容 / Content | 状态 / Status |
+|------|---------------|---------------|
+| Wave 1 | Flask 项目结构、User 模型、extensions | ✅ 已完成 |
+| Wave 2 | 认证模块（注册/登录/登出） | ✅ 已完成 |
+| Wave 3 | 文件存储服务、权限装饰器 | ✅ 已完成 |
+
 **Success Criteria / 成功标准** (what must be TRUE / 必须满足):
 
 1. User can register account with email and password / 用户可以使用邮箱和密码注册账户
@@ -31,6 +39,10 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 5. Users can only view and edit their own certificates (permission enforced) / 用户只能查看和编辑自己的证书（权限强制执行）
 6. Certificate files are stored with UUID-based paths (no original filenames in storage) / 证书文件使用 UUID 路径存储（存储中不保留原始文件名）
 7. File upload/download respects permission boundaries / 文件上传/下载遵守权限边界
+8. All operations provide user feedback via flash messages / 所有操作通过 flash 消息向用户提供反馈
+9. Navigation allows users to access all pages from any location / 导航允许用户从任何位置访问所有页面
+10. Admin can enable/disable users, reset passwords / 管理员可以启用/禁用用户、重置密码
+11. Users can change their own password / 用户可以修改自己的密码
 
 **Plans / 计划**: TBD / 待定
 
@@ -86,7 +98,7 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 
 | Phase / 阶段 | Plans Complete / 计划完成 | Status / 状态 | Completed / 完成 |
 |--------------|---------------------------|---------------|-----------------|
-| 1. Foundation / 基础架构 | 0/TBD | Not started / 未开始 | - |
+| 1. Foundation / 基础架构 | 3/3 | ✅ Complete / 已完成 | 2026-03-19 |
 | 2. Core / 核心功能 | 0/TBD | Not started / 未开始 | - |
 | 3. Enhancement / 增强功能 | 0/TBD | Not started / 未开始 | - |
 

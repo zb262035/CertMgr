@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}个人中心 - CertMgr{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">个人中心 / Profile</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5>账号信息 / Account Information</h5>
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>邮箱 / Email:</strong></td>
+                            <td>{{ current_user.email }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>角色 / Role:</strong></td>
+                            <td>
+                                {% if current_user.is_admin %}
+                                    <span class="badge bg-danger">管理员 / Admin</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">用户 / User</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>注册时间 / Registered:</strong></td>
+                            <td>{{ current_user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <hr>
+
+                <h5>修改密码 / Change Password</h5>
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.current_password.label(class="form-label") }}
+                        {{ form.current_password(class="form-control") }}
+                        {% if form.current_password.errors %}
+                            <div class="text-danger">
+                                {% for error in form.current_password.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.new_password.label(class="form-label") }}
+                        {{ form.new_password(class="form-control") }}
+                        {% if form.new_password.errors %}
+                            <div class="text-danger">
+                                {% for error in form.new_password.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.confirm_password.label(class="form-label") }}
+                        {{ form.confirm_password(class="form-control") }}
+                        {% if form.confirm_password.errors %}
+                            <div class="text-danger">
+                                {% for error in form.confirm_password.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {{ form.submit(class="btn btn-primary") }}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

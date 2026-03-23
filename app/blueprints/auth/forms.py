@@ -32,3 +32,19 @@ class LoginForm(FlaskForm):
     ])
     remember_me = BooleanField('记住我 / Remember Me')
     submit = SubmitField('登录 / Login')
+
+
+class PasswordChangeForm(FlaskForm):
+    """Password change form for user profile."""
+    current_password = PasswordField('当前密码 / Current Password', validators=[
+        DataRequired(message='请输入当前密码')
+    ])
+    new_password = PasswordField('新密码 / New Password', validators=[
+        DataRequired(message='请输入新密码'),
+        Length(min=8, message='密码至少需要8个字符')
+    ])
+    confirm_password = PasswordField('确认新密码 / Confirm New Password', validators=[
+        DataRequired(message='请确认新密码'),
+        EqualTo('new_password', message='两次输入的密码不一致')
+    ])
+    submit = SubmitField('修改密码 / Change Password')
