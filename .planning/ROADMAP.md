@@ -44,7 +44,7 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 10. Admin can enable/disable users, reset passwords / 管理员可以启用/禁用用户、重置密码
 11. Users can change their own password / 用户可以修改自己的密码
 
-**Plans / 计划**: TBD / 待定
+**Plans / 计划**: 3 plans (completed)
 
 ---
 
@@ -71,7 +71,12 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 11. Admin can batch import certificates from Excel file / 管理员可以批量从 Excel 文件导入证书
 12. Admin can view statistics: certificate counts by type, trends over time / 管理员可以查看统计：各类型证书数量、时间趋势
 
-**Plans / 计划**: TBD / 待定
+**Plans / 计划**: 3 plans in 3 waves
+
+Plans:
+- [ ] 02-01-PLAN.md — Wave 1: Certificate model + CRUD routes + card templates
+- [ ] 02-02-PLAN.md — Wave 2: DataTables API + search/filter + Excel batch import
+- [ ] 02-03-PLAN.md — Wave 3: Statistics dashboard with Chart.js
 
 ---
 
@@ -99,7 +104,7 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 | Phase / 阶段 | Plans Complete / 计划完成 | Status / 状态 | Completed / 完成 |
 |--------------|---------------------------|---------------|-----------------|
 | 1. Foundation / 基础架构 | 3/3 | ✅ Complete / 已完成 | 2026-03-19 |
-| 2. Core / 核心功能 | 0/TBD | Not started / 未开始 | - |
+| 2. Core / 核心功能 | 0/3 | In progress / 进行中 | - |
 | 3. Enhancement / 增强功能 | 0/TBD | Not started / 未开始 | - |
 
 ---
