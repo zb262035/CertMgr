@@ -14,7 +14,7 @@ _ocr_engine = None
 def get_ocr_engine():
     global _ocr_engine
     if _ocr_engine is None:
-        _ocr_engine = PaddleOCR(lang='ch', use_textline_orientation=True, show_log=False)
+        _ocr_engine = PaddleOCR(lang='ch')
     return _ocr_engine
 
 # Type detection keywords
