@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>CertMgr / 证书管理系统</h1>
+        <p>欢迎，{{ current_user.email }}！</p>
+
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>我的证书 / My Certificates</h5>
+                        <p>查看和管理我的证书</p>
+                        <a href="#" class="btn btn-primary">查看 / View</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>上传证书 / Upload</h5>
+                        <p>上传新的证书</p>
+                        <a href="#" class="btn btn-success">上传 / Upload</a>
+                    </div>
+                </div>
+            </div>
+            {% if current_user.is_admin %}
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>管理后台 / Admin</h5>
+                        <p>管理用户和证书</p>
+                        <a href="{{ url_for('admin.list_users') }}" class="btn btn-danger">管理 / Admin</a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

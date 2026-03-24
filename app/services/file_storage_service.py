@@ -8,7 +8,7 @@ This module provides secure file storage for certificate files:
 """
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from werkzeug.utils import secure_filename
 from flask import current_app
@@ -49,6 +49,25 @@ class FileStorageService:
         elif isinstance(folder, str):
             folder = Path(folder)
         return folder
+
+    @staticmethod
+    def _secure_path(path: str) -> Path:
+        """Validate path is within upload folder (prevent path traversal).
+
+        Args:
+            path: Relative path from upload folder
+
+        Returns:
+            Full path if valid
+
+        Raises:
+            ValueError: If path would escape upload folder
+        """
+        upload_folder = FileStorageService.get_upload_folder().resolve()
+        full_path = (upload_folder / path).resolve()
+        if not str(full_path).startswith(str(upload_folder)):
+            raise ValueError("Invalid path: would escape upload folder")
+        return full_path
 
     @staticmethod
     def validate_file(file) -> tuple[bool, str]:
@@ -98,7 +117,7 @@ class FileStorageService:
         unique_filename = f"{uuid.uuid4().hex}.{ext}"
 
         # Directory sharding by year/month
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         date_path = Path(str(now.year)) / f"{now.month:02d}"
 
         upload_folder = FileStorageService.get_upload_folder()
@@ -125,8 +144,10 @@ class FileStorageService:
         Returns:
             True if deleted, False if not found
         """
-        upload_folder = FileStorageService.get_upload_folder()
-        full_path = upload_folder / path
+        try:
+            full_path = FileStorageService._secure_path(path)
+        except ValueError:
+            return False
 
         if full_path.exists():
             full_path.unlink()
@@ -143,8 +164,10 @@ class FileStorageService:
         Returns:
             True if file exists
         """
-        upload_folder = FileStorageService.get_upload_folder()
-        full_path = upload_folder / path
+        try:
+            full_path = FileStorageService._secure_path(path)
+        except ValueError:
+            return False
         return full_path.exists()
 
     @staticmethod
@@ -157,8 +180,10 @@ class FileStorageService:
         Returns:
             File size in bytes, or 0 if not found
         """
-        upload_folder = FileStorageService.get_upload_folder()
-        full_path = upload_folder / path
+        try:
+            full_path = FileStorageService._secure_path(path)
+        except ValueError:
+            return 0
         if full_path.exists():
             return os.path.getsize(full_path)
         return 0
