@@ -56,41 +56,67 @@ Every new document created must be added to `DOCUMENT_INDEX.md`.
 
 ## 测试流程 / Test Workflow
 
-**每实现一个功能，必须通过 UI 测试验证后再继续。**
+**每实现一个功能，必须通过全面测试验证后再继续。**
 
 ### 开发节奏 / Development Rhythm
 
 ```
-实现功能 → UI 测试验证 → 修复问题 → 再测试 → 完美后再下一功能
+实现功能 → 单元测试 → API 测试 → UI 测试 → 全部通过 → 下一功能
 ```
 
-### 测试要求 / Test Requirements
+### 测试类型 / Test Types
 
-1. **功能测试**：使用 Playwright 进行端到端测试
+1. **单元测试 (Unit Tests)** - 业务逻辑
+   ```bash
+   python3 -m pytest tests/unit/
+   ```
+   - Service 层逻辑
+   - 数据验证
+   - 权限检查
+
+2. **API 测试 (API Tests)** - 后端接口
+   ```bash
+   python3 -m pytest tests/api/
+   ```
+   - REST API 端点
+   - 请求/响应格式
+   - 认证和授权
+
+3. **UI 测试 (UI Tests)** - 端到端
    ```bash
    python3 tests/test_ui.py
    ```
-
-2. **测试覆盖**：
    - 页面加载无错误
    - 表单提交正常
    - 按钮点击响应
    - 页面跳转正确
    - Console 无 JavaScript 错误
 
-3. **截图存档**：测试截图保存到 `tests/screenshots/`
-
 ### 测试检查清单 / Test Checklist
 
 - [ ] 功能代码编写完成
-- [ ] Playwright 测试脚本编写
-- [ ] 运行测试，截图记录
-- [ ] 测试全部通过（无错误）
+- [ ] 单元测试：Service/Model 逻辑测试
+- [ ] API 测试：Flask test client 测试
+- [ ] UI 测试：Playwright 浏览器测试
+- [ ] 运行全部测试，全部通过
 - [ ] 功能交付完美，才进行下一个
+
+### 测试目录结构 / Test Directory Structure
+
+```
+tests/
+├── unit/           # 单元测试
+│   ├── test_services.py
+│   └── test_models.py
+├── api/            # API 测试
+│   └── test_routes.py
+├── test_ui.py      # Playwright UI 测试
+└── screenshots/    # UI 测试截图
+```
 
 ### 依赖安装 / Dependencies
 
 ```bash
-pip3 install playwright
+pip3 install playwright pytest
 python3 -m playwright install chromium
 ```
