@@ -1215,6 +1215,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import or_
 from app.extensions import db
 from app.models.certificate import Certificate, CertificateType
+from app.models.user import User
 from app.blueprints.certificates import certificates_bp
 
 
@@ -1256,11 +1257,13 @@ def certificates_data():
     if not current_user.is_admin:
         query = query.filter_by(user_id=current_user.id)
 
-    # Global search across title and type
+    # Global search across title, type, and holder name (CERT-07)
     if search_value:
         search_filter = or_(
             Certificate.title.ilike(f'%{search_value}%'),
-            Certificate.certificate_type.has(CertificateType.name.ilike(f'%{search_value}%'))
+            Certificate.certificate_type.has(CertificateType.name.ilike(f'%{search_value}%')),
+            Certificate.owner.has(User.name.ilike(f'%{search_value}%')),
+            Certificate.owner.has(User.email.ilike(f'%{search_value}%'))
         )
         query = query.filter(search_filter)
 
@@ -1598,21 +1601,9 @@ Replace app/blueprints/certificates/templates/list.html with DataTables + search
     </div>
 </div>
 
-{# DataTables #}
-<div class="table-responsive">
-    <table id="certificates-table" class="table table-striped" style="width:100%">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>标题 / Title</th>
-                <th>类型 / Type</th>
-                <th>上传时间 / Date</th>
-                <th>操作 / Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
+{# DataTables with card rendering (per user decision: card layout) #}
+<div id="certificates-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {# Cards will be rendered here by DataTables #}
 </div>
 {% endblock %}
 
@@ -1630,7 +1621,7 @@ $(document).ready(function() {
             });
         });
 
-    // Initialize DataTables
+    // Initialize DataTables with card rendering
     var table = $('#certificates-table').DataTable({
         ajax: {
             url: '/certificates/api/data',
@@ -1645,27 +1636,61 @@ $(document).ready(function() {
         serverSide: true,
         processing: true,
         columns: [
-            { data: 'id', name: 'id' },
+            { data: 'id', name: 'id', visible: false },
             { data: 'title', name: 'title' },
             { data: 'type', name: 'type' },
             { data: 'created_at', name: 'created_at' },
-            {
-                data: null,
-                orderable: false,
-                searchable: false,
-                render: function(data, type, row) {
-                    return `<a href="/certificates/${row.id}" class="btn btn-sm btn-outline-primary">详情</a>`;
-                }
-            }
+            { data: 'file_mime_type', name: 'file_mime_type', visible: false }
         ],
         order: [[3, 'desc']],
         language: {
             url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/zh.json'
         },
         drawCallback: function() {
-            // Re-attach event handlers if needed
+            // Render cards from table data
+            renderCertificateCards();
         }
     });
+
+    function renderCertificateCards() {
+        var container = $('#certificates-container');
+        container.empty();
+        
+        var rows = table.rows().data();
+        if (rows.length === 0) {
+            container.html('<div class="col-12"><div class="alert alert-info">暂无证书 / No certificates found</div></div>');
+            return;
+        }
+        
+        rows.each(function(cert) {
+            var imageHtml = '';
+            if (cert.file_mime_type && cert.file_mime_type.includes('image')) {
+                imageHtml = `<img src="/certificates/${cert.id}/file" class="card-img-top" alt="${cert.title}" style="height: 180px; object-fit: cover;">`;
+            } else {
+                imageHtml = `<div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 180px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+                    </svg>
+                </div>`;
+            }
+            
+            var date = cert.created_at ? cert.created_at.split('T')[0] : 'N/A';
+            var card = `<div class="col">
+                <div class="card h-100 shadow-sm">
+                    ${imageHtml}
+                    <div class="card-body">
+                        <h5 class="card-title text-truncate" title="${cert.title}">${cert.title}</h5>
+                        <p class="card-text"><span class="badge bg-primary">${cert.type || 'Unknown'}</span></p>
+                        <p class="card-text"><small class="text-muted">${date}</small></p>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="/certificates/${cert.id}" class="btn btn-sm btn-outline-primary w-100">查看详情 / View</a>
+                    </div>
+                </div>
+            </div>`;
+            container.append(card);
+        });
+    }
 
     // Filter button click
     $('#filter-btn').on('click', function() {
@@ -1745,7 +1770,12 @@ def import_batch():
                 return redirect(request.url)
 
             # Import records
-            success_count, import_errors = ExcelImportService.import_batch(records, user_id=1)  # Admin imports for user 1 as placeholder
+            # Get user_id from form dropdown (required field)
+            target_user_id = request.form.get('user_id', type=int)
+            if not target_user_id:
+                flash('请选择目标用户 / Please select target user', 'danger')
+                return redirect(request.url)
+            success_count, import_errors = ExcelImportService.import_batch(records, user_id=target_user_id)
 
             flash(f'成功导入 {success_count} 个证书 / Successfully imported {success_count} certificates', 'success')
 
