@@ -54,7 +54,9 @@ class TestCertificateModel:
             db.session.add(user)
             db.session.commit()
 
-            cert_type = CertificateType.query.first()
+            # Use existing cert type (seeded by create_app)
+            cert_type = CertificateType.query.filter_by(name='比赛获奖证书').first()
+            assert cert_type is not None
 
             cert = Certificate(
                 user_id=user.id,
@@ -78,7 +80,8 @@ class TestCertificateModel:
             db.session.add(user)
             db.session.commit()
 
-            cert_type = CertificateType.query.first()
+            cert_type = CertificateType.query.filter_by(name='资格证').first()
+            assert cert_type is not None
 
             cert = Certificate(
                 user_id=user.id,
@@ -91,22 +94,20 @@ class TestCertificateModel:
 
             data = cert.to_dict()
             assert data['title'] == 'Dict Test'
-            assert data['type'] == '比赛获奖证书'
+            assert data['type'] == '资格证'
             assert 'created_at' in data
 
 
 class TestCertificateTypeModel:
     """Test CertificateType model."""
 
-    def test_create_certificate_type(self, app):
-        """Test certificate type creation."""
+    def test_certificate_types_seeded(self, app):
+        """Test that certificate types are seeded."""
         with app.app_context():
-            cert_type = CertificateType(
-                name='资格证',
-                fields_schema={'name': 'string'}
-            )
-            db.session.add(cert_type)
-            db.session.commit()
-
-            assert cert_type.id is not None
-            assert cert_type.name == '资格证'
+            types = CertificateType.query.all()
+            assert len(types) >= 4
+            names = [t.name for t in types]
+            assert '比赛获奖证书' in names
+            assert '荣誉证书' in names
+            assert '资格证' in names
+            assert '职业技能等级证书' in names
