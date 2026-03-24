@@ -9,6 +9,7 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="POST" enctype="multipart/form-data" id="ocr-upload-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3">
                 <label class="form-label">证书文件 / Certificate File</label>
                 <input type="file" name="file" id="file-input" class="form-control"

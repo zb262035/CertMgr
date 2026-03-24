@@ -1,6 +1,6 @@
 """Certificate CRUD routes."""
 import os
-from flask import render_template, redirect, url_for, flash, send_file, abort, request
+from flask import render_template, redirect, url_for, flash, send_file, abort, request, current_app
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models.certificate import Certificate
@@ -120,7 +120,6 @@ def file(cert_id):
     if not current_user.is_admin and certificate.user_id != current_user.id:
         abort(403)
 
-    from flask import current_app
     file_full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], certificate.file_path)
     return send_file(file_full_path, mimetype=certificate.file_mime_type)
 

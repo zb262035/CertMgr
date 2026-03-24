@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ClaudeCodeTabState">
-    <option name="tabCount" value="2" />
+    <option name="tabNames">
+      <map>
+        <entry key="2" value="AI3" />
+      </map>
+    </option>
+    <option name="tabCount" value="3" />
   </component>
 </project>
