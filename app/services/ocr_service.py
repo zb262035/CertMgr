@@ -14,7 +14,7 @@ _ocr_engine = None
 def get_ocr_engine():
     global _ocr_engine
     if _ocr_engine is None:
-        _ocr_engine = PaddleOCR(use_angle_cls=True, lang='ch', use_gpu=False, show_log=False)
+        _ocr_engine = PaddleOCR(lang='ch', use_textline_orientation=True, show_log=False)
     return _ocr_engine
 
 # Type detection keywords
@@ -52,20 +52,24 @@ class OCRService:
 
             # Run OCR
             ocr = get_ocr_engine()
-            result = ocr.ocr(file_path, cls=True)
+            result = ocr.predict(file_path)
 
             # Clean up temp file
             if file_path.endswith('.tmp.png'):
                 os.remove(file_path)
 
-            if not result or not result[0]:
-                return {'success': False, 'error': '未能识别出文字 / No text recognized'}
-
-            # Extract all text lines
+            # Parse result (new PaddleOCR API returns dict with rec_texts)
             text_lines = []
-            for line in result[0]:
-                if line and len(line) >= 2:
-                    text_lines.append(line[1][0])
+            for res in result:
+                rec_texts = res.get('rec_texts', []) if isinstance(res, dict) else []
+                if isinstance(res, dict):
+                    for text in res.get('rec_texts', []):
+                        text_lines.append(text)
+                elif isinstance(res, list) and len(res) >= 2:
+                    text_lines.append(res[1][0])  # Old API format
+
+            if not text_lines:
+                return {'success': False, 'error': '未能识别出文字 / No text recognized'}
 
             full_text = '\n'.join(text_lines)
 
