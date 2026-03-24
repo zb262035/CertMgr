@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: unknown
+last_updated: "2026-03-24T03:28:46.793Z"
+progress:
+  total_phases: 3
+  completed_phases: 1
+  total_plans: 4
+  completed_plans: 4
+---
+
 # State: CertMgr / 状态：CertMgr
 
 ## Project Reference / 项目引用
@@ -26,6 +39,7 @@ Last activity / 最后活动: 2026-03-24 — Phase 2 规划完成: 3-wave plan, 
 Phase 1 已在 2026-03-19 完成并提交到 main 分支。
 
 **Commits / 提交:**
+
 - `041b669` - feat(phase-1): Flask application factory and project structure
 - `fe79204` - feat(phase-1): user authentication with register/login/logout
 - `6816756` - feat(phase-1): file storage service and permission decorators
@@ -33,6 +47,7 @@ Phase 1 已在 2026-03-19 完成并提交到 main 分支。
 - `0cb062b` - docs(phase-2): planning complete with 3 waves, decisions, research
 
 **What was built / 完成内容:**
+
 - ✅ Flask 应用工厂 (`create_app()`)
 - ✅ User 模型 (PBKDF2 密码哈希)
 - ✅ 认证模块 (注册/登录/登出)
@@ -41,6 +56,7 @@ Phase 1 已在 2026-03-19 完成并提交到 main 分支。
 - ✅ Admin 用户管理 (`/admin/users`)
 
 **Phase 1 补充 / Phase 1 Supplement (2026-03-23):**
+
 - ✅ 完整导航栏 (首页/证书/上传/管理/个人中心)
 - ✅ 操作反馈 (Flash messages)
 - ✅ 用户管理增强 (禁用/启用、重置密码)
@@ -61,6 +77,7 @@ Phase 1 已在 2026-03-19 完成并提交到 main 分支。
 | Wave 3 | Chart.js 统计面板 | 4 |
 
 **用户决策 / User Decisions:**
+
 - 证书列表布局: 卡片布局
 - 动态字段: 同一页面动态切换
 - 搜索/筛选位置: 列表页顶部
@@ -82,6 +99,7 @@ Phase 1 已在 2026-03-19 完成并提交到 main 分支。
 ## Performance Metrics / 性能指标
 
 **Velocity / 速度:**
+
 - Total plans completed / 已完成计划总数: 3
 - Average duration / 平均时长: N/A
 - Total execution time / 总执行时间: ~2 hours / 小时
@@ -93,6 +111,7 @@ Phase 1 已在 2026-03-19 完成并提交到 main 分支。
 | 1. Foundation | 3/3 | Complete | ~40 min |
 
 **Recent Trend / 最近趋势:**
+
 - Phase 1 completed successfully
 
 ---
@@ -102,6 +121,7 @@ Phase 1 已在 2026-03-19 完成并提交到 main 分支。
 ### Decisions / 决策
 
 From research (2026-03-19) / 来自研究 (2026-03-19):
+
 - Phase 1 / 第一阶段: Use Flask app factory pattern with extensions.py / 使用 Flask 应用工厂模式和 extensions.py
 - Phase 1 / 第一阶段: JSONB for dynamic certificate fields (not EAV) / 使用 JSONB 存储动态证书字段（不用 EAV）
 - Phase 1 / 第一阶段: UUID-based file naming with date sharding / 使用 UUID 文件命名和日期分片
