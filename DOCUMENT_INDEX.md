@@ -49,6 +49,10 @@ This document lists all project documents and their purpose. All new or modified
 | `phases/02-core/02-RESEARCH.md` | Phase 2 研究文档 / Phase 2 research | 证书 CRUD、动态字段、搜索筛选、批量导入、统计图表的技术研究 |
 | `phases/02-core/02-CONTEXT.md` | Phase 2 上下文文档 / Phase 2 context | 用户决策：卡片布局、动态字段、搜索、统计、Excel导入、编辑删除方式 |
 | `phases/02-core/02-PLAN.md` | Phase 2 执行计划 / Phase 2 plan | 3-wave plan：CRUD+模板 → 搜索+导入 → 统计面板 |
+| `phases/02-core/02-core-01-SUMMARY.md` | Phase 2 Wave 1 完成总结 / Wave 1 summary | Certificate 模型、CRUD、卡片模板 |
+| `phases/02-core/02-core-02-SUMMARY.md` | Phase 2 Wave 2 完成总结 / Wave 2 summary | DataTables、搜索筛选、Excel 批量导入 |
+| `phases/02-core/02-03-SUMMARY.md` | Phase 2 Wave 3 完成总结 / Wave 3 summary | Chart.js 统计面板 |
+| `phases/02-core/02-VERIFICATION.md` | Phase 2 验证报告 / Phase 2 verification | 功能验证、安全审查 |
 | `phases/01-foundation/01-PLAN.md` | Phase 1 Wave 1 执行计划 / Phase 1 Wave 1 plan | Flask 应用工厂、目录结构、User 模型、基础模板 |
 | `phases/01-foundation/02-PLAN.md` | Phase 1 Wave 2 执行计划 / Phase 1 Wave 2 plan | 用户注册/登录/登出、Auth Adapter 接口 |
 | `phases/01-foundation/03-PLAN.md` | Phase 1 Wave 3 执行计划 / Phase 1 Wave 3 plan | UUID 文件存储、权限装饰器、Admin 用户管理 |
@@ -68,10 +72,14 @@ This document lists all project documents and their purpose. All new or modified
 | `app/config.py` | 配置管理 / Configuration | Dev/Prod/Testing 环境配置 |
 | `app/extensions.py` | 扩展实例 / Extensions | SQLAlchemy、LoginManager、CSRF 共享实例 |
 | `app/models/user.py` | 用户模型 / User model | User ORM 模型，PBKDF2 密码哈希 |
+| `app/models/certificate.py` | 证书模型 / Certificate model | Certificate/CertificateType 模型，JSONB 动态字段 |
 | `app/blueprints/auth/` | 认证模块 / Auth module | 注册、登录、登出路由和表单 |
 | `app/blueprints/admin/` | 管理模块 / Admin module | 用户管理、权限控制路由 |
+| `app/blueprints/certificates/` | 证书模块 / Certificates module | 证书 CRUD、OCR 识别、批量导入、DataTables API |
+| `app/blueprints/statistics/` | 统计模块 / Statistics module | Chart.js 统计面板 API |
 | `app/services/auth_service.py` | 认证服务 / Auth service | 可插拔认证适配器接口 |
 | `app/services/file_storage_service.py` | 文件存储服务 / File storage | UUID 命名、日期分片的安全存储 |
+| `app/services/ocr_service.py` | OCR 服务 / OCR service | PaddleOCR 证书识别服务 |
 | `app/decorators.py` | 权限装饰器 / Permission decorators | `@admin_required` 管理员权限控制 |
 | `app/templates/` | 模板文件 / Templates | Jinja2 HTML 模板 (base, auth, admin, home) |
 | `instance/` | 实例目录 / Instance directory | 运行时生成（数据库、上传文件），不进入 git |
@@ -91,6 +99,7 @@ This document lists all project documents and their purpose. All new or modified
 | 2026-03-23 | 更新 CLAUDE.md：状态从"Phase 1 规划中"改为"Phase 1 已完成" | Claude |
 | 2026-03-24 | 添加 phases/02-core/02-RESEARCH.md 到 Phase 文档表 | Claude |
 | 2026-03-24 | 添加 phases/02-core/02-CONTEXT.md 和 02-PLAN.md；Phase 2 规划完成 | Claude |
+| 2026-03-24 | 添加 Phase 2 完成文档（Wave 1-3 summaries, verification）；添加 certificates/statistics blueprints、ocr_service、certificate 模型到文档索引 | Claude |
 
 ---
 

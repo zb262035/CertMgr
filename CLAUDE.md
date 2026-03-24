@@ -41,7 +41,7 @@ Every new document created must be added to `DOCUMENT_INDEX.md`.
 
 - **项目路径:** /Users/ice/PycharmProjects/CertMgr
 - **类型:** Python Flask Web Application
-- **状态:** Phase 1 已完成，Phase 2 待开始
+- **状态:** Phase 1 已完成，Phase 2 已完成（CRUD、搜索、统计、OCR）
 
 ## 技术栈 / Tech Stack
 
