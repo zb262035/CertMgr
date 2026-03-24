@@ -74,8 +74,8 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 **Plans / 计划**: 3 plans in 3 waves
 
 Plans:
-- [ ] 02-01-PLAN.md — Wave 1: Certificate model + CRUD routes + card templates
-- [ ] 02-02-PLAN.md — Wave 2: DataTables API + search/filter + Excel batch import
+- [x] 02-01-PLAN.md — Wave 1: Certificate model + CRUD routes + card templates ✅
+- [x] 02-02-PLAN.md — Wave 2: DataTables API + search/filter + Excel batch import ✅
 - [ ] 02-03-PLAN.md — Wave 3: Statistics dashboard with Chart.js
 
 ---
@@ -104,7 +104,7 @@ Plans:
 | Phase / 阶段 | Plans Complete / 计划完成 | Status / 状态 | Completed / 完成 |
 |--------------|---------------------------|---------------|-----------------|
 | 1. Foundation / 基础架构 | 3/3 | ✅ Complete / 已完成 | 2026-03-19 |
-| 2. Core / 核心功能 | 0/3 | In progress / 进行中 | - |
+| 2. Core / 核心功能 | 2/3 | In progress / 进行中 | - |
 | 3. Enhancement / 增强功能 | 0/TBD | Not started / 未开始 | - |
 
 ---
