@@ -9,8 +9,8 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 ## Phases / 阶段
 
 - [ ] **Phase 1: Foundation / 基础架构** - Flask app factory, models, local auth, file storage, permission control / Flask 应用工厂、数据模型、本地认证、文件存储、权限控制
-- [x] **Phase 2: Core / 核心功能** - Certificate CRUD, dynamic fields, upload/download, batch import, search, filter, stats / 证书 CRUD、动态字段、上传下载、批量导入、搜索、筛选、统计 (completed 2026-03-24)
-- [ ] **Phase 3: Enhancement / 增强功能** - PDF export, SSO integration, OCR, audit trail / PDF 导出、SSO 集成、OCR、审计日志
+- [x] **Phase 2: Core / 核心功能** - Certificate CRUD, dynamic fields, upload/download, batch import, search, filter, stats, OCR / 证书 CRUD、动态字段、上传下载、批量导入、搜索、筛选、统计、OCR (completed 2026-03-24, OCR added 2026-03-24)
+- [ ] **Phase 3: Enhancement / 增强功能** - PDF export, SSO integration, audit trail / PDF 导出、SSO 集成、审计日志
 
 ## Phase Details / 阶段详情
 
@@ -50,11 +50,11 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 
 ### Phase 2: Core / 核心功能
 
-**Goal / 目标**: Full certificate management with search and statistics / 完整的证书管理与搜索统计
+**Goal / 目标**: Full certificate management with search, statistics, and OCR recognition / 完整的证书管理与搜索统计、OCR识别
 
 **Depends on / 依赖**: Phase 1 / 第一阶段
 
-**Requirements / 需求**: CERT-01, CERT-02, CERT-04, CERT-05, CERT-06, CERT-07, CERT-08, CERT-09
+**Requirements / 需求**: CERT-01, CERT-02, CERT-04, CERT-05, CERT-06, CERT-07, CERT-08, CERT-09, OCR-01
 
 **Success Criteria / 成功标准** (what must be TRUE / 必须满足):
 
@@ -70,13 +70,15 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 10. Admin can manually add/edit/delete any certificate / 管理员可以手动添加/编辑/删除任何证书
 11. Admin can batch import certificates from Excel file / 管理员可以批量从 Excel 文件导入证书
 12. Admin can view statistics: certificate counts by type, trends over time / 管理员可以查看统计：各类型证书数量、时间趋势
+13. User can upload certificate and system auto-extracts text using OCR / 用户可以上传证书，系统使用OCR自动提取文字
 
-**Plans / 计划**: 3 plans in 3 waves
+**Plans / 计划**: 4 plans in 3 waves
 
 Plans:
 - [x] 02-01-PLAN.md — Wave 1: Certificate model + CRUD routes + card templates ✅
 - [x] 02-02-PLAN.md — Wave 2: DataTables API + search/filter + Excel batch import ✅
-- [x] 02-03-PLAN.md — Wave 3: Statistics dashboard with Chart.js
+- [x] 02-03-PLAN.md — Wave 3: Statistics dashboard with Chart.js ✅
+- [x] 02-04-PLAN.md — OCR certificate entry with PaddleOCR ✅ (added 2026-03-24)
 
 ---
 
@@ -86,14 +88,13 @@ Plans:
 
 **Depends on / 依赖**: Phase 2 / 第二阶段
 
-**Requirements / 需求**: AUTH-02 (SSO component / SSO 组件), CERT-10
+**Requirements / 需求**: AUTH-02 (SSO component / SSO 组件), CERT-10, AUDIT-01
 
 **Success Criteria / 成功标准** (what must be TRUE / 必须满足):
 
 1. User can export certificate as printable PDF with Chinese text / 用户可以导出带有中文的可打印 PDF 证书
 2. System supports SSO integration via pluggable auth adapter (OA/WeChat Work/CAS) / 系统通过可插拔认证适配器支持 SSO 集成（OA/企业微信/CAS）
 3. System logs audit trail: who created/modified/deleted certificates / 系统记录审计日志：谁创建/修改/删除了证书
-4. User can upload photo of paper certificate and system auto-extracts text (OCR) / 用户可以上传纸质证书照片，系统自动提取文字（OCR）
 
 **Plans / 计划**: TBD / 待定
 
@@ -104,7 +105,7 @@ Plans:
 | Phase / 阶段 | Plans Complete / 计划完成 | Status / 状态 | Completed / 完成 |
 |--------------|---------------------------|---------------|-----------------|
 | 1. Foundation / 基础架构 | 3/3 | ✅ Complete / 已完成 | 2026-03-19 |
-| 2. Core / 核心功能 | 3/3 | ✅ Complete / 已完成 | 2026-03-24 |
+| 2. Core / 核心功能 | 4/4 | ✅ Complete / 已完成 | 2026-03-24 |
 | 3. Enhancement / 增强功能 | 0/TBD | Not started / 未开始 | - |
 
 ---
@@ -127,9 +128,9 @@ Plans:
 | CERT-07 | Phase 2 | Search by name/type/date/issuer / 按姓名/类型/日期/颁发机构搜索 |
 | CERT-08 | Phase 2 | Multi-filter search / 多条件筛选搜索 |
 | CERT-09 | Phase 2 | Statistics dashboard / 统计面板 |
+| OCR-01 | Phase 2 | Auto-extract text from certificate photo / 从证书照片自动提取文字 |
 | CERT-10 | Phase 3 | Export to printable PDF / 导出为可打印PDF |
-| OCR-01 | Phase 3 | Auto-extract text from certificate photo / 从证书照片自动提取文字 |
 | AUDIT-01 | Phase 3 | Audit trail for certificate changes / 证书变更审计日志 |
 
-**Coverage / 覆盖率:** 13/13 v1 requirements mapped / 13/13 v1 需求已映射 ✓
+**Coverage / 覆盖率:** 15/15 v1 requirements mapped / 15/15 v1 需求已映射 ✓
 **Out of scope / 超出范围:** 5 items (see PROJECT.md / 见 PROJECT.md)
