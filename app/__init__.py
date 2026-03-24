@@ -47,4 +47,18 @@ def create_app(config_name='dev'):
     with app.app_context():
         db.create_all()
 
+        # Seed certificate types if they don't exist
+        from app.models.certificate import CertificateType
+        CERT_TYPES = [
+            {'name': '比赛获奖证书', 'fields_schema': []},
+            {'name': '荣誉证书', 'fields_schema': []},
+            {'name': '资格证', 'fields_schema': []},
+            {'name': '职业技能等级证书', 'fields_schema': []},
+        ]
+        for ct_data in CERT_TYPES:
+            if not CertificateType.query.filter_by(name=ct_data['name']).first():
+                ct = CertificateType(name=ct_data['name'], fields_schema=ct_data['fields_schema'])
+                db.session.add(ct)
+        db.session.commit()
+
     return app
