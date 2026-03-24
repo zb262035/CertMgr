@@ -1,6 +1,6 @@
 """Certificate CRUD routes."""
 import os
-from flask import render_template, redirect, url_for, flash, send_file, abort, request, current_app
+from flask import render_template, redirect, url_for, flash, send_file, abort, request, current_app, session
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models.certificate import Certificate
