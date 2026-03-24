@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}统计面板 - CertMgr{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-card {
+    border-left: 4px solid;
+}
+.stat-card.primary { border-color: #0d6efd; }
+.stat-card.success { border-color: #198754; }
+.stat-card.warning { border-color: #ffc107; }
+.stat-card.info { border-color: #0dcaf0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">统计面板 / Statistics Dashboard</h1>
+
+{# Summary Cards #}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card primary">
+            <div class="card-body">
+                <h5 class="card-title">证书总数 / Total Certificates</h5>
+                <h2 id="total-count">-</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card success">
+            <div class="card-body">
+                <h5 class="card-title">本月新增 / Added This Month</h5>
+                <h2 id="recent-count">-</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card info">
+            <div class="card-body">
+                <h5 class="card-title">证书类型 / Certificate Types</h5>
+                <h2 id="type-count">-</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Charts Row 1 #}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                证书类型分布 / Certificates by Type
+            </div>
+            <div class="card-body">
+                <canvas id="typeChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                月度趋势 / Monthly Trend (Last 12 Months)
+            </div>
+            <div class="card-body">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Charts Row 2 #}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                用户分布 / Certificates by User (Top 10)
+            </div>
+            <div class="card-body">
+                <canvas id="userChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                最新证书 / Recent Certificates
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>标题</th>
+                            <th>类型</th>
+                            <th>用户</th>
+                            <th>日期</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-table">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load summary data
+    fetch('/statistics/api/summary')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('total-count').textContent = data.total;
+            document.getElementById('recent-count').textContent = data.recent_30_days;
+            document.getElementById('type-count').textContent = data.by_type.length;
+        });
+
+    // Chart.js defaults
+    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    Chart.defaults.color = '#666';
+
+    // Type distribution chart (bar)
+    fetch('/statistics/api/chart/by_type')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('typeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: '证书数量',
+                        data: data.values,
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(255, 206, 86, 0.5)',
+                            'rgba(75, 192, 192, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        });
+
+    // Monthly trend chart (line)
+    fetch('/statistics/api/chart/monthly_trend')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: '证书数量',
+                        data: data.values,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        });
+
+    // User distribution chart (pie/doughnut)
+    fetch('/statistics/api/chart/by_user')
+        .then(r => r.json())
+        .then(data => {
+            const ctx = document.getElementById('userChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.values,
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(255, 206, 86, 0.5)',
+                            'rgba(75, 192, 192, 0.5)',
+                            'rgba(153, 102, 255, 0.5)',
+                            'rgba(255, 159, 64, 0.5)',
+                            'rgba(199, 199, 199, 0.5)',
+                            'rgba(83, 102, 255, 0.5)',
+                            'rgba(78, 205, 196, 0.5)',
+                            'rgba(255, 99, 132, 0.5)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+        });
+
+    // Recent certificates table
+    fetch('/statistics/api/chart/recent')
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('recent-table');
+            tbody.innerHTML = '';
+            data.data.forEach(cert => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${cert.id}</td>
+                        <td>${cert.title}</td>
+                        <td><span class="badge bg-primary">${cert.type}</span></td>
+                        <td>${cert.user}</td>
+                        <td>${cert.date}</td>
+                    </tr>
+                `;
+            });
+        });
+});
+</script>
+{% endblock %}
