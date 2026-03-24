@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}编辑证书 - CertMgr{% endblock %}
+
+{% block content %}
+<h1>编辑证书 / Edit Certificate</h1>
+
+<form method="POST" enctype="multipart/form-data" id="certificate-form">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.certificate_type_id.label(class="form-label") }}
+        {{ form.certificate_type_id(class="form-select", id="certificate_type_id") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.title.label(class="form-label") }}
+        {{ form.title(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">更换证书文件 / Replace File (可选)</label>
+        {{ form.file(class="form-control", accept=".pdf,.png,.jpg,.jpeg,.gif") }}
+        <small class="text-muted">当前文件: {{ certificate.original_filename }}</small>
+    </div>
+
+    <div id="dynamic-fields-container" class="border rounded p-3 mb-3" style="display: none;">
+        <h5>证书详情</h5>
+        <div id="dynamic-fields-content"></div>
+    </div>
+
+    <input type="hidden" name="dynamic_fields_json" id="dynamic_fields_json" value="{{ certificate.fields|tojson }}">
+
+    {{ form.submit(class="btn btn-primary") }}
+    <a href="{{ url_for('certificates.detail', cert_id=certificate.id) }}" class="btn btn-secondary">取消</a>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const FIELD_SCHEMAS = {{ FIELD_SCHEMAS|tojson }};
+const CURRENT_FIELDS = {{ certificate.fields|tojson }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateDynamicFields();
+    document.getElementById('certificate_type_id').addEventListener('change', updateDynamicFields);
+    // Pre-fill current values
+    if (CURRENT_FIELDS) {
+        Object.keys(CURRENT_FIELDS).forEach(key => {
+            const el = document.getElementById('dynamic_' + key);
+            if (el) el.value = CURRENT_FIELDS[key];
+        });
+    }
+});
+
+function updateDynamicFields() {
+    const typeSelect = document.getElementById('certificate_type_id');
+    const container = document.getElementById('dynamic-fields-container');
+    const content = document.getElementById('dynamic-fields-content');
+    const hiddenInput = document.getElementById('dynamic_fields_json');
+
+    const selectedTypeName = typeSelect.options[typeSelect.selectedIndex]?.text;
+    const schema = FIELD_SCHEMAS[selectedTypeName];
+
+    if (!schema || schema.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+
+    if (content.children.length === 0) {
+        schema.forEach(field => {
+            const div = document.createElement('div');
+            div.className = 'mb-3';
+
+            if (field.type === 'select') {
+                div.innerHTML = `
+                    <label class="form-label">${field.label}${field.required ? ' *' : ''}</label>
+                    <select class="form-select" name="dynamic_${field.name}" id="dynamic_${field.name}">
+                        <option value="">请选择</option>
+                        ${(field.options || []).map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                    </select>`;
+            } else if (field.type === 'text') {
+                div.innerHTML = `
+                    <label class="form-label">${field.label}${field.required ? ' *' : ''}</label>
+                    <textarea class="form-control" name="dynamic_${field.name}" id="dynamic_${field.name}" rows="3"></textarea>`;
+            } else if (field.type === 'date') {
+                div.innerHTML = `
+                    <label class="form-label">${field.label}${field.required ? ' *' : ''}</label>
+                    <input type="date" class="form-control" name="dynamic_${field.name}" id="dynamic_${field.name}">`;
+            } else {
+                div.innerHTML = `
+                    <label class="form-label">${field.label}${field.required ? ' *' : ''}</label>
+                    <input type="text" class="form-control" name="dynamic_${field.name}" id="dynamic_${field.name}">`;
+            }
+            content.appendChild(div);
+        });
+    }
+
+    document.getElementById('certificate-form').addEventListener('submit', function() {
+        const fields = {};
+        schema.forEach(field => {
+            const el = document.getElementById('dynamic_' + field.name);
+            if (el && el.value) fields[field.name] = el.value;
+        });
+        hiddenInput.value = JSON.stringify(fields);
+    });
+}
+</script>
+{% endblock %}

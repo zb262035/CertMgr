@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{ certificate.title }} - CertMgr{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        {% if certificate.file_mime_type and 'image' in certificate.file_mime_type %}
+        <img src="{{ url_for('certificates.file', cert_id=certificate.id) }}" class="img-fluid rounded" alt="{{ certificate.title }}">
+        {% else %}
+        <div class="bg-secondary text-white rounded p-5 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+            </svg>
+            <div class="mt-2">PDF 文件</div>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ certificate.title }}</h4>
+                <span class="badge bg-primary">{{ certificate.certificate_type.name if certificate.certificate_type else 'Unknown' }}</span>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">标题:</dt>
+                    <dd class="col-sm-9">{{ certificate.title }}</dd>
+                    <dt class="col-sm-3">类型:</dt>
+                    <dd class="col-sm-9">{{ certificate.certificate_type.name if certificate.certificate_type else 'Unknown' }}</dd>
+                    <dt class="col-sm-3">上传时间:</dt>
+                    <dd class="col-sm-9">{{ certificate.created_at.strftime('%Y-%m-%d %H:%M') if certificate.created_at else 'N/A' }}</dd>
+                </dl>
+                {% if certificate.fields %}
+                <hr>
+                <h5>证书详情</h5>
+                <dl class="row">
+                    {% for key, value in certificate.fields.items() %}
+                    <dt class="col-sm-3">{{ key }}:</dt>
+                    <dd class="col-sm-9">{{ value }}</dd>
+                    {% endfor %}
+                </dl>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('certificates.edit', cert_id=certificate.id) }}" class="btn btn-warning">编辑 / Edit</a>
+                <form method="POST" action="{{ url_for('certificates.delete', cert_id=certificate.id) }}" class="d-inline"
+                      onsubmit="return confirm('确定要删除吗？/ Are you sure?');">
+                    <button type="submit" class="btn btn-danger">删除 / Delete</button>
+                </form>
+                <a href="{{ url_for('certificates.list') }}" class="btn btn-secondary float-end">返回 / Back</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
