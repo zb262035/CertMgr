@@ -46,6 +46,9 @@ def certificates_data():
     if not current_user.is_admin:
         query = query.filter_by(user_id=current_user.id)
 
+    # Total count before filtering (recordsTotal)
+    records_total = query.count()
+
     # Global search across title, type, and holder name (CERT-07)
     if search_value:
         search_filter = or_(
@@ -66,8 +69,8 @@ def certificates_data():
     if filter_date_to:
         query = query.filter(Certificate.created_at <= filter_date_to)
 
-    # Total count before filtering
-    total_count = query.count()
+    # Count after filtering (recordsFiltered)
+    records_filtered = query.count()
 
     # Apply sorting and pagination
     order_col = columns[order_column] if order_column < len(columns) else 'created_at'
@@ -78,8 +81,8 @@ def certificates_data():
 
     return jsonify({
         'draw': draw,
-        'recordsTotal': Certificate.query.count(),
-        'recordsFiltered': total_count,
+        'recordsTotal': records_total,
+        'recordsFiltered': records_filtered,
         'data': [cert.to_dict() for cert in records]
     })
 

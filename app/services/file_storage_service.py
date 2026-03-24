@@ -142,14 +142,17 @@ class FileStorageService:
             path: Relative path from upload folder (e.g., "2024/03/abc123.pdf")
 
         Returns:
-            True if deleted, False if not found
+            True if deleted, False if not found or path is empty
         """
+        if not path:
+            return False
+
         try:
             full_path = FileStorageService._secure_path(path)
         except ValueError:
             return False
 
-        if full_path.exists():
+        if full_path.exists() and full_path.is_file():
             full_path.unlink()
             return True
         return False
