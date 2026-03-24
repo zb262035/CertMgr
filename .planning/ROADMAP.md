@@ -9,7 +9,7 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 ## Phases / 阶段
 
 - [ ] **Phase 1: Foundation / 基础架构** - Flask app factory, models, local auth, file storage, permission control / Flask 应用工厂、数据模型、本地认证、文件存储、权限控制
-- [ ] **Phase 2: Core / 核心功能** - Certificate CRUD, dynamic fields, upload/download, batch import, search, filter, stats / 证书 CRUD、动态字段、上传下载、批量导入、搜索、筛选、统计
+- [x] **Phase 2: Core / 核心功能** - Certificate CRUD, dynamic fields, upload/download, batch import, search, filter, stats / 证书 CRUD、动态字段、上传下载、批量导入、搜索、筛选、统计 (completed 2026-03-24)
 - [ ] **Phase 3: Enhancement / 增强功能** - PDF export, SSO integration, OCR, audit trail / PDF 导出、SSO 集成、OCR、审计日志
 
 ## Phase Details / 阶段详情
@@ -76,7 +76,7 @@ CertMgr 是一个学校证书管理系统，使教职工能够数字化和管理
 Plans:
 - [x] 02-01-PLAN.md — Wave 1: Certificate model + CRUD routes + card templates ✅
 - [x] 02-02-PLAN.md — Wave 2: DataTables API + search/filter + Excel batch import ✅
-- [ ] 02-03-PLAN.md — Wave 3: Statistics dashboard with Chart.js
+- [x] 02-03-PLAN.md — Wave 3: Statistics dashboard with Chart.js
 
 ---
 
@@ -104,7 +104,7 @@ Plans:
 | Phase / 阶段 | Plans Complete / 计划完成 | Status / 状态 | Completed / 完成 |
 |--------------|---------------------------|---------------|-----------------|
 | 1. Foundation / 基础架构 | 3/3 | ✅ Complete / 已完成 | 2026-03-19 |
-| 2. Core / 核心功能 | 2/3 | In progress / 进行中 | - |
+| 2. Core / 核心功能 | 3/3 | ✅ Complete / 已完成 | 2026-03-24 |
 | 3. Enhancement / 增强功能 | 0/TBD | Not started / 未开始 | - |
 
 ---
