@@ -13,11 +13,11 @@ See / 参见: `.planning/PROJECT.md` (updated / 更新 2026-03-19)
 
 Phase / 阶段: 1 of 3 (Foundation / 基础架构)
 Status / 状态: **COMPLETED / 已完成**
-Last activity / 最后活动: 2026-03-23 — Phase 1 补充: 导航/反馈/用户管理增强
+Last activity / 最后活动: 2026-03-24 — Phase 2 规划完成: 3-wave plan, 用户决策, 技术研究
 
 **Phase 1 Progress / Phase 1 进度:** [████████████████████] 100% + 补充
 
-**Phase 2 Progress / Phase 2 进度:** [░░░░░░░░░░░░░░░░░░░░] 0% — Ready to start / 准备开始
+**Phase 2 Progress / Phase 2 进度:** [░░░░░░░░░░░░░░░░░░░░] 0% — Planning complete / 规划完成，待执行
 
 ---
 
@@ -29,6 +29,8 @@ Phase 1 已在 2026-03-19 完成并提交到 main 分支。
 - `041b669` - feat(phase-1): Flask application factory and project structure
 - `fe79204` - feat(phase-1): user authentication with register/login/logout
 - `6816756` - feat(phase-1): file storage service and permission decorators
+- `12d4352` - fix(phase-1): navigation, user management, and certificates stub
+- `0cb062b` - docs(phase-2): planning complete with 3 waves, decisions, research
 
 **What was built / 完成内容:**
 - ✅ Flask 应用工厂 (`create_app()`)
@@ -43,6 +45,28 @@ Phase 1 已在 2026-03-19 完成并提交到 main 分支。
 - ✅ 操作反馈 (Flash messages)
 - ✅ 用户管理增强 (禁用/启用、重置密码)
 - ✅ 用户个人中心 (修改密码)
+
+---
+
+## Phase 2 Planning Summary / Phase 2 规划摘要
+
+**Phase 2 已在 2026-03-24 完成规划。**
+
+**Wave 结构 / Wave Structure:**
+
+| Wave | 任务 | 文件数 |
+|------|------|--------|
+| Wave 1 | Certificate 模型 + CRUD + 卡片模板 | 10 |
+| Wave 2 | DataTables API + 搜索/筛选 + Excel 导入 | 5 |
+| Wave 3 | Chart.js 统计面板 | 4 |
+
+**用户决策 / User Decisions:**
+- 证书列表布局: 卡片布局
+- 动态字段: 同一页面动态切换
+- 搜索/筛选位置: 列表页顶部
+- 统计面板: 详细统计
+- Excel批量导入: 自动解析
+- 编辑/删除入口: 详情页操作
 
 ---
 
@@ -92,6 +116,6 @@ None yet. / 暂无。
 
 ## Session Continuity / 会话连续性
 
-Last session / 最后会话: 2026-03-23
-Stopped at / 停止于: Phase 1 supplement completed — navigation, feedback, user management enhancements
+Last session / 最后会话: 2026-03-24
+Stopped at / 停止于: Phase 2 planning complete — documents and memory updated
 Resume file / 恢复文件: None / 无

@@ -47,6 +47,8 @@ This document lists all project documents and their purpose. All new or modified
 |------|------|------|
 | `phases/01-foundation/01-RESEARCH.md` | Phase 1 研究文档 / Phase 1 research | Flask 工厂模式、认证、文件存储、权限管理的技术研究 |
 | `phases/02-core/02-RESEARCH.md` | Phase 2 研究文档 / Phase 2 research | 证书 CRUD、动态字段、搜索筛选、批量导入、统计图表的技术研究 |
+| `phases/02-core/02-CONTEXT.md` | Phase 2 上下文文档 / Phase 2 context | 用户决策：卡片布局、动态字段、搜索、统计、Excel导入、编辑删除方式 |
+| `phases/02-core/02-PLAN.md` | Phase 2 执行计划 / Phase 2 plan | 3-wave plan：CRUD+模板 → 搜索+导入 → 统计面板 |
 | `phases/01-foundation/01-PLAN.md` | Phase 1 Wave 1 执行计划 / Phase 1 Wave 1 plan | Flask 应用工厂、目录结构、User 模型、基础模板 |
 | `phases/01-foundation/02-PLAN.md` | Phase 1 Wave 2 执行计划 / Phase 1 Wave 2 plan | 用户注册/登录/登出、Auth Adapter 接口 |
 | `phases/01-foundation/03-PLAN.md` | Phase 1 Wave 3 执行计划 / Phase 1 Wave 3 plan | UUID 文件存储、权限装饰器、Admin 用户管理 |
@@ -88,6 +90,7 @@ This document lists all project documents and their purpose. All new or modified
 | 2026-03-23 | 创建 .planning/FEATURES.md 功能清单文档 | Claude |
 | 2026-03-23 | 更新 CLAUDE.md：状态从"Phase 1 规划中"改为"Phase 1 已完成" | Claude |
 | 2026-03-24 | 添加 phases/02-core/02-RESEARCH.md 到 Phase 文档表 | Claude |
+| 2026-03-24 | 添加 phases/02-core/02-CONTEXT.md 和 02-PLAN.md；Phase 2 规划完成 | Claude |
 
 ---
 
