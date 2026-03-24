@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>统计面板 / Statistics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 2rem;
+        }
+        .stats-card {
+            text-align: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        .stats-card h3 {
+            font-size: 2.5rem;
+            margin: 0;
+        }
+        .stats-card p {
+            margin: 0.5rem 0 0;
+            opacity: 0.9;
+        }
+        .recent-table {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="mb-4">统计面板 / Statistics Dashboard</h1>
+
+    <!-- 统计卡片 / Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h3 id="total-count">-</h3>
+                <p>证书总数 / Total Certificates</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <h3 id="recent-count">-</h3>
+                <p>最近30天 / Last 30 Days</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <h3 id="type-count">-</h3>
+                <p>证书类型 / Certificate Types</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <h3 id="user-count">-</h3>
+                <p>用户数量 / Users</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图表 / Charts -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">证书类型分布 / By Type</h5>
+                    <div class="chart-container">
+                        <canvas id="byTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">月度趋势 / Monthly Trend</h5>
+                    <div class="chart-container">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">用户分布 / By User</h5>
+                    <div class="chart-container">
+                        <canvas id="byUserChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">最近证书 / Recent Certificates</h5>
+                    <div class="recent-table">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>标题 / Title</th>
+                                    <th>类型 / Type</th>
+                                    <th>用户 / User</th>
+                                    <th>日期 / Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 颜色配置 / Color config
+const colors = [
+    '#667eea', '#f093fb', '#4facfe', '#43e97b',
+    '#ff9f43', '#ee5a24', '#2ed573', '#1e90ff'
+];
+
+// 加载统计摘要 / Load summary
+async function loadSummary() {
+    try {
+        const res = await fetch('/statistics/api/summary');
+        const data = await res.json();
+        document.getElementById('total-count').textContent = data.total;
+        document.getElementById('recent-count').textContent = data.recent_30_days;
+        document.getElementById('type-count').textContent = data.by_type.length;
+    } catch (e) {
+        console.error('Failed to load summary:', e);
+    }
+}
+
+// 加载图表 / Load charts
+async function loadCharts() {
+    // 按类型 / By Type
+    try {
+        const res = await fetch('/statistics/api/chart/by_type');
+        const data = await res.json();
+        new Chart(document.getElementById('byTypeChart'), {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: '证书数量 / Count',
+                    data: data.values,
+                    backgroundColor: colors
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    } catch (e) { console.error('by_type error:', e); }
+
+    // 月度趋势 / Monthly Trend
+    try {
+        const res = await fetch('/statistics/api/chart/monthly_trend');
+        const data = await res.json();
+        new Chart(document.getElementById('monthlyChart'), {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: '证书数量 / Count',
+                    data: data.values,
+                    borderColor: '#667eea',
+                    tension: 0.3,
+                    fill: true,
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    } catch (e) { console.error('monthly_trend error:', e); }
+
+    // 按用户 / By User
+    try {
+        const res = await fetch('/statistics/api/chart/by_user');
+        const data = await res.json();
+        if (data.labels.length > 0) {
+            new Chart(document.getElementById('byUserChart'), {
+                type: 'pie',
+                data: {
+                    labels: data.labels.map(e => e.length > 20 ? e.substring(0, 20) + '...' : e),
+                    datasets: [{
+                        data: data.values,
+                        backgroundColor: colors.slice(0, data.labels.length)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        } else {
+            document.getElementById('byUserChart').parentElement.innerHTML += '<p class="text-muted">暂无数据 / No data</p>';
+        }
+    } catch (e) { console.error('by_user error:', e); }
+
+    // 最近证书 / Recent
+    try {
+        const res = await fetch('/statistics/api/chart/recent');
+        const data = await res.json();
+        const tbody = document.getElementById('recent-table-body');
+        tbody.innerHTML = data.data.map(c => `
+            <tr>
+                <td>${c.title.substring(0, 30)}${c.title.length > 30 ? '...' : ''}</td>
+                <td>${c.type}</td>
+                <td>${c.user.substring(0, 15)}${c.user.length > 15 ? '...' : ''}</td>
+                <td>${c.date}</td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error('recent error:', e); }
+}
+
+// 用户数量 / User count
+async function loadUserCount() {
+    // 从 by_user 获取用户数
+    try {
+        const res = await fetch('/statistics/api/chart/by_user');
+        const data = await res.json();
+        document.getElementById('user-count').textContent = data.labels.length;
+    } catch (e) { document.getElementById('user-count').textContent = '?'; }
+}
+
+loadSummary();
+loadCharts();
+loadUserCount();
+</script>
+{% endblock %}
