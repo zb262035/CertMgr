@@ -36,6 +36,41 @@ Last activity / 最后活动: 2026-03-24 — Phase 2 完成，OCR评估效果不
 
 ---
 
+## Session 2026-03-24 (续) / Evening Session
+
+**今天完成的工作 / Today's Work:**
+
+- ✅ 修复证书卡片点击无反应问题
+- ✅ 修复删除功能（空路径误删目录bug）
+- ✅ 修复 API 信息泄露（recordsTotal）
+- ✅ 添加 jQuery 支持 DataTables
+- ✅ 权限审查并修复安全问题
+- ✅ 改进 UI 测试（自动数据创建、测试结果汇总）
+- ✅ 添加测试数据（7个证书图片）
+- ✅ 修复缺失的 statistics/dashboard.html 模板
+- ✅ 6/6 UI 测试全部通过
+
+**提交记录 / Commits:**
+
+- `6d73255` - test: improve UI test with auto data creation
+- `0c0cbf4` - docs: update document index
+- `5a9e94b` - test: add sample certificates for UI testing
+- `2a3b3cf` - fix: add missing statistics dashboard template
+
+**测试状态 / Test Status:**
+
+| 测试类型 | 命令 | 状态 |
+|----------|------|------|
+| 单元测试 | `pytest tests/unit/` | ✅ |
+| API 测试 | `pytest tests/api/` | ✅ |
+| UI 测试 | `python3 tests/test_ui.py` | ✅ 6/6 |
+
+**明天 / Tomorrow:**
+
+- Phase 3: OCR增强、证书模板、SSO集成
+
+---
+
 ## Phase 1 Completion Summary / Phase 1 完成摘要
 
 Phase 1 已在 2026-03-19 完成并提交到 main 分支。
