@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}确认证书信息 - CertMgr{% endblock %}
+
+{% block content %}
+<h1>确认证书信息 / Confirm Certificate Information</h1>
+<p class="text-muted">请核对系统识别的信息，如有错误请修正 / Please verify the information recognized by the system, correct any errors</p>
+
+{% if ocr_result %}
+<form method="POST" action="{{ url_for('certificates.ocr_confirm') }}" id="ocr-confirm-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="card mb-3">
+        <div class="card-header">识别结果 / Recognition Result</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">证书类型 *</label>
+                        <select name="certificate_type" id="certificate_type" class="form-select" required>
+                            <option value="比赛获奖证书" {% if ocr_result.type == '比赛获奖证书' %}selected{% endif %}>比赛获奖证书</option>
+                            <option value="荣誉证书" {% if ocr_result.type == '荣誉证书' %}selected{% endif %}>荣誉证书</option>
+                            <option value="资格证" {% if ocr_result.type == '资格证' %}selected{% endif %}>资格证</option>
+                            <option value="职业技能等级证书" {% if ocr_result.type == '职业技能等级证书' %}selected{% endif %}>职业技能等级证书</option>
+                            <option value="特殊证书" {% if ocr_result.type == '特殊证书' %}selected{% endif %}>特殊证书</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">证书标题 *</label>
+                        <input type="text" name="title" id="title" class="form-control" required
+                               value="{{ ocr_result.title or '' }}">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="alert alert-info">
+                        <strong>文件名 / Filename:</strong> {{ filename }}<br>
+                        <strong>识别类型 / Detected Type:</strong> {{ ocr_result.type }}<br>
+                        <strong>可信度 / Confidence:</strong> {{ '高 / High' if ocr_result.fields else '低 / Low - please verify' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">动态字段 / Dynamic Fields</div>
+        <div class="card-body">
+            <div id="dynamic-fields-container">
+                <!-- Dynamic fields rendered by JavaScript based on selected type -->
+            </div>
+        </div>
+    </div>
+
+    <input type="hidden" name="dynamic_fields_json" id="dynamic_fields_json" value="{}">
+
+    <div class="mb-3">
+        <button type="submit" class="btn btn-success">确认保存 / Confirm and Save</button>
+        <a href="{{ url_for('certificates.ocr_upload') }}" class="btn btn-secondary">重新上传 / Upload Again</a>
+        <a href="{{ url_for('certificates.list') }}" class="btn btn-outline-secondary">取消 / Cancel</a>
+    </div>
+</form>
+{% else %}
+<div class="alert alert-warning">
+    无识别结果，请重新上传 / No recognition result, please upload again
+</div>
+<a href="{{ url_for('certificates.ocr_upload') }}" class="btn btn-primary">重新上传 / Upload Again</a>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const FIELD_SCHEMAS = {{ FIELD_SCHEMAS|tojson }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateDynamicFields();
+    document.getElementById('certificate_type').addEventListener('change', updateDynamicFields);
+
+    document.getElementById('ocr-confirm-form').addEventListener('submit', function() {
+        // Collect dynamic fields before submit
+        const fields = {};
+        document.querySelectorAll('#dynamic-fields-container input, #dynamic-fields-container select, #dynamic-fields-container textarea').forEach(function(el) {
+            if (el.name && el.value) {
+                fields[el.name.replace('dynamic_', '')] = el.value;
+            }
+        });
+        document.getElementById('dynamic_fields_json').value = JSON.stringify(fields);
+    });
+});
+
+function updateDynamicFields() {
+    const typeSelect = document.getElementById('certificate_type');
+    const container = document.getElementById('dynamic-fields-container');
+    const selectedType = typeSelect.value;
+    const schema = FIELD_SCHEMAS[selectedType] || [];
+
+    container.innerHTML = '';
+
+    if (schema.length === 0) {
+        container.innerHTML = '<p class="text-muted">特殊证书类型，请手动填写所有字段 / Special certificate type, please fill in all fields manually</p>';
+        return;
+    }
+
+    // Pre-fill from OCR result
+    const ocrFields = {{ (ocr_result.fields if ocr_result else {})|tojson }};
+
+    schema.forEach(function(field) {
+        const div = document.createElement('div');
+        div.className = 'mb-3';
+
+        const existingValue = ocrFields[field.name] || '';
+
+        let inputHtml = '';
+        if (field.type === 'select') {
+            inputHtml = `
+                <select class="form-select" name="dynamic_${field.name}" id="dynamic_${field.name}">
+                    <option value="">请选择 / Select</option>
+                    ${(field.options || []).map(function(opt) {
+                        const selected = existingValue === opt ? 'selected' : '';
+                        return `<option value="${opt}" ${selected}>${opt}</option>`;
+                    }).join('')}
+                </select>`;
+        } else if (field.type === 'text') {
+            inputHtml = `<textarea class="form-control" name="dynamic_${field.name}" id="dynamic_${field.name}" rows="2">${existingValue}</textarea>`;
+        } else if (field.type === 'date') {
+            inputHtml = `<input type="date" class="form-control" name="dynamic_${field.name}" id="dynamic_${field.name}" value="${existingValue}">`;
+        } else {
+            inputHtml = `<input type="text" class="form-control" name="dynamic_${field.name}" id="dynamic_${field.name}" value="${existingValue}">`;
+        }
+
+        div.innerHTML = `
+            <label class="form-label">${field.label}${field.required ? ' *' : ''}</label>
+            ${inputHtml}`;
+        container.appendChild(div);
+    });
+}
+</script>
+{% endblock %}

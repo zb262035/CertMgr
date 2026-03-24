@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}OCR识别上传 - CertMgr{% endblock %}
+
+{% block content %}
+<h1>OCR识别上传 / OCR Recognition Upload</h1>
+<p class="text-muted">上传证书图片或PDF，系统自动识别内容 / Upload certificate image or PDF, system automatically recognizes content</p>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data" id="ocr-upload-form">
+            <div class="mb-3">
+                <label class="form-label">证书文件 / Certificate File</label>
+                <input type="file" name="file" id="file-input" class="form-control"
+                       accept=".pdf,.png,.jpg,.jpeg,.gif" required>
+                <small class="text-muted">支持 PDF、图片格式（PNG, JPG, GIF）</small>
+            </div>
+
+            <div id="preview-container" class="mb-3" style="display: none;">
+                <label class="form-label">预览 / Preview</label>
+                <img id="preview-image" class="img-thumbnail" style="max-height: 300px;">
+            </div>
+
+            <div class="mb-3">
+                <div class="progress" id="upload-progress" style="display: none;">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+                <div id="ocr-status" class="text-muted" style="display: none;"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+                上传并识别 / Upload and Recognize
+            </button>
+            <a href="{{ url_for('certificates.list') }}" class="btn btn-secondary">取消 / Cancel</a>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">提示 / Tips</div>
+    <div class="card-body">
+        <ul class="mb-0">
+            <li>确保证书图片清晰，光照均匀 / Ensure certificate image is clear with even lighting</li>
+            <li>PDF文件只识别第一页 / PDF files only recognize the first page</li>
+            <li>识别后请仔细核对信息是否正确 / Please carefully verify if the recognized information is correct</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('file-input');
+    const previewContainer = document.getElementById('preview-container');
+    const previewImage = document.getElementById('preview-image');
+    const form = document.getElementById('ocr-upload-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const progress = document.getElementById('upload-progress');
+    const status = document.getElementById('ocr-status');
+
+    // Preview image on select
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                previewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            previewContainer.style.display = 'none';
+        }
+    });
+
+    // Show loading state on submit
+    form.addEventListener('submit', function() {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '识别中... / Recognizing...';
+        progress.style.display = 'block';
+        status.style.display = 'block';
+        status.textContent = '正在识别证书内容... / Recognizing certificate content...';
+
+        // Animate progress bar
+        let width = 0;
+        const interval = setInterval(function() {
+            width += 10;
+            if (width > 90) clearInterval(interval);
+            progress.querySelector('.progress-bar').style.width = width + '%';
+        }, 300);
+    });
+});
+</script>
+{% endblock %}
