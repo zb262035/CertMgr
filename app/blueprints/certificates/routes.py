@@ -4,9 +4,10 @@ from flask import render_template, redirect, url_for, flash, send_file, abort, r
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models.certificate import Certificate
+from app.models.user import User
 from app.blueprints.certificates import certificates_bp
 from app.blueprints.certificates.forms import CertificateBaseForm, CertificateEditForm, FIELD_SCHEMAS
-from app.blueprints.certificates.services import CertificateService
+from app.blueprints.certificates.services import CertificateService, ExcelImportService
 from app.decorators import admin_required
 
 
@@ -122,3 +123,62 @@ def file(cert_id):
     from flask import current_app
     file_full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], certificate.file_path)
     return send_file(file_full_path, mimetype=certificate.file_mime_type)
+
+
+@certificates_bp.route('/import', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def import_batch():
+    """Batch import certificates from Excel file (admin only).
+
+    Auto-parse without template per user decision.
+    """
+    if request.method == 'GET':
+        users = User.query.order_by(User.email).all()
+        return render_template('certificates/import.html', users=users)
+
+    if 'file' not in request.files:
+        flash('请选择文件 / Please select a file', 'danger')
+        return redirect(request.url)
+
+    file = request.files['file']
+    if file.filename == '':
+        flash('请选择文件 / Please select a file', 'danger')
+        return redirect(request.url)
+
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        flash('请上传 Excel 文件 / Please upload an Excel file', 'danger')
+        return redirect(request.url)
+
+    try:
+        # Parse Excel
+        records, parse_errors = ExcelImportService.parse_excel(file)
+
+        if parse_errors:
+            for error in parse_errors:
+                flash(error, 'warning')
+
+        if not records:
+            flash('未能从文件中解析出证书记录 / No certificate records parsed from file', 'warning')
+            return redirect(request.url)
+
+        # Import records
+        # Get user_id from form dropdown (required field)
+        target_user_id = request.form.get('user_id', type=int)
+        if not target_user_id:
+            flash('请选择目标用户 / Please select target user', 'danger')
+            return redirect(request.url)
+        success_count, import_errors = ExcelImportService.import_batch(records, user_id=target_user_id)
+
+        flash(f'成功导入 {success_count} 个证书 / Successfully imported {success_count} certificates', 'success')
+
+        if import_errors:
+            for error in import_errors:
+                flash(error, 'danger')
+
+        return redirect(url_for('certificates.list'))
+
+    except Exception as e:
+        flash(f'导入失败 / Import failed: {str(e)}', 'danger')
+        return redirect(request.url)
+

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}批量导入 - CertMgr{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h1>批量导入证书 / Batch Import Certificates</h1>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                说明 / Instructions
+            </div>
+            <div class="card-body">
+                <p>上传 Excel 文件，系统将自动识别列标题并导入证书记录。</p>
+                <p>Upload an Excel file and the system will automatically detect column headers to import certificate records.</p>
+
+                <h5>支持的列 / Supported Columns:</h5>
+                <ul>
+                    <li><strong>标题 / Title</strong> (必需 / Required): 标题、名称、证书名称、name、title</li>
+                    <li><strong>类型 / Type</strong> (可选 / Optional): 类型、证书类型、type</li>
+                    <li><strong>比赛名称 / Competition Name</strong>: 比赛名称、比赛、competition</li>
+                    <li><strong>获奖等级 / Award Level</strong>: 奖项、获奖等级、level</li>
+                    <li><strong>获奖日期 / Award Date</strong>: 获奖日期、获奖时间</li>
+                    <li><strong>主办单位 / Organizer</strong>: 主办单位、组织单位</li>
+                    <li><strong>证书编号 / Certificate Number</strong>: 证书编号、编号</li>
+                    <li>... 以及更多 / and more</li>
+                </ul>
+
+                <div class="alert alert-info">
+                    <strong>提示:</strong> 第一行必须是列标题，数据从第二行开始。
+                    <br><strong>Note:</strong> First row must be column headers, data starts from second row.
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                上传文件 / Upload File
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">选择 Excel 文件 / Select Excel File</label>
+                        <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">导入到用户 / Import to User</label>
+                        <select name="user_id" class="form-select">
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.email }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">选择证书将属于的用户账户 / Select which user account the certificates will belong to</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">导入 / Import</button>
+                    <a href="{{ url_for('certificates.list') }}" class="btn btn-secondary">取消 / Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
