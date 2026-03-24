@@ -92,8 +92,11 @@ This document lists all project documents and their purpose. All new or modified
 
 | 目录/文件 | 功能 | 说明 |
 |------------|------|------|
-| `tests/` | 测试目录 / Test directory | Playwright UI 测试 |
-| `tests/test_ui.py` | UI 测试脚本 / UI test script | 端到端浏览器测试 |
+| `tests/` | 测试目录 / Test directory | Playwright UI 测试、单元测试、API 测试 |
+| `tests/test_ui.py` | UI 测试脚本 / UI test script | 端到端浏览器测试（登录、证书列表、搜索、上传、统计） |
+| `tests/conftest.py` | pytest 配置 / pytest configuration | 临时数据库 fixture、测试客户端 |
+| `tests/unit/test_models.py` | 单元测试 / Unit tests | User、Certificate、CertificateType 模型测试 |
+| `tests/api/test_routes.py` | API 测试 / API tests | 认证、证书 CRUD、管理员 API 端点测试 |
 
 ---
 
@@ -111,6 +114,7 @@ This document lists all project documents and their purpose. All new or modified
 | 2026-03-24 | 添加 phases/02-core/02-RESEARCH.md 到 Phase 文档表 | Claude |
 | 2026-03-24 | 添加 phases/02-core/02-CONTEXT.md 和 02-PLAN.md；Phase 2 规划完成 | Claude |
 | 2026-03-24 | 添加 Phase 2 完成文档（Wave 1-3 summaries, verification）；添加 certificates/statistics blueprints、ocr_service、certificate 模型到文档索引 | Claude |
+| 2026-03-24 | 改进 tests/test_ui.py：添加测试结果汇总、自动创建测试数据、更好的错误检测；更新测试目录文档 | Claude |
 
 ---
 
