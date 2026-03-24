@@ -74,5 +74,5 @@ No external specs — requirements fully captured above.
 
 ## Deferred Ideas
 
-- Phase 2 原实现（手动填表）需重构为 OCR 自动识别
-- 此更新影响：上传页面、编辑页面、证书模型字段设计
+- ~~Phase 2 原实现（手动填表）需重构为 OCR 自动识别~~ ✅ 已实现 OCR 功能（评估效果不理想）
+- OCR 继续研究移至 Phase 3：PaddleOCR 对 PDF 矢量字体识别效果差，需要研究其他方案

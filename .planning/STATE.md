@@ -18,19 +18,21 @@ progress:
 See / 参见: `.planning/PROJECT.md` (updated / 更新 2026-03-19)
 
 **Core value / 核心价值:** Faculty/staff certificate assets are safe, accessible, and traceable. / 教职工的证书资产安全、便捷、可追溯。
-**Current focus / 当前重点:** Phase 2 - Core / 第二阶段 - 核心功能
+**Current focus / 当前重点:** Phase 2 - Core / 第二阶段 - 核心功能 (已完成，OCR暂缓至Phase 3)
 
 ---
 
 ## Current Position / 当前状态
 
-Phase / 阶段: 1 of 3 (Foundation / 基础架构)
+Phase / 阶段: 2 of 3 (Core / 核心功能)
 Status / 状态: **COMPLETED / 已完成**
-Last activity / 最后活动: 2026-03-24 — Phase 2 规划完成: 3-wave plan, 用户决策, 技术研究
+Last activity / 最后活动: 2026-03-24 — Phase 2 完成，OCR评估效果不理想移至Phase 3
 
-**Phase 1 Progress / Phase 1 进度:** [████████████████████] 100% + 补充
+**Phase 1 Progress / Phase 1 进度:** [████████████████████] 100%
 
-**Phase 2 Progress / Phase 2 进度:** [████████████████████] 3/3 plans complete — Wave 1 + Wave 2 + Wave 3 complete
+**Phase 2 Progress / Phase 2 进度:** [████████████████████] 3/3 plans complete — Wave 1 + Wave 2 + Wave 3 + OCR探索(未完成)
+
+**Phase 2 备注:** OCR功能(PaddleOCR)评估完成，效果不佳，移至Phase 3继续研究
 
 ---
 
@@ -93,6 +95,9 @@ Phase 1 已在 2026-03-19 完成并提交到 main 分支。
   - Commits: `3ffd35e`, `99ee52c`, `31b7111`, `aa024b2`
 - **Wave 3 (Plan 03):** ✅ 完成 - Chart.js 统计面板
   - Commits: `0175a92`, `18021f8`
+- **OCR 探索 (Plan 04):** ⏸️ 暂缓 - PaddleOCR 评估效果不理想，移至 Phase 3
+  - 发现：PDF矢量字体识别差，速度慢
+  - 决策：保留代码，移至 Phase 3 继续研究
 
 ---
 
