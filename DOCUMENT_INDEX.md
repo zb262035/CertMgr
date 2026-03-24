@@ -86,6 +86,17 @@ This document lists all project documents and their purpose. All new or modified
 
 ---
 
+## 测试目录 / Testing Directory
+
+> Phase 2 补充
+
+| 目录/文件 | 功能 | 说明 |
+|------------|------|------|
+| `tests/` | 测试目录 / Test directory | Playwright UI 测试 |
+| `tests/test_ui.py` | UI 测试脚本 / UI test script | 端到端浏览器测试 |
+
+---
+
 ## 文档更新记录 / Document Update Log
 
 | 日期 | 更新内容 | 负责人 |

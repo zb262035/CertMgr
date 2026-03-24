@@ -50,3 +50,47 @@ Every new document created must be added to `DOCUMENT_INDEX.md`.
 - PostgreSQL 15+ (开发用 SQLite)
 - Bootstrap 5.3.8
 - Waitress 3.0.x
+- Playwright (UI 测试)
+
+---
+
+## 测试流程 / Test Workflow
+
+**每实现一个功能，必须通过 UI 测试验证后再继续。**
+
+### 开发节奏 / Development Rhythm
+
+```
+实现功能 → UI 测试验证 → 修复问题 → 再测试 → 完美后再下一功能
+```
+
+### 测试要求 / Test Requirements
+
+1. **功能测试**：使用 Playwright 进行端到端测试
+   ```bash
+   python3 tests/test_ui.py
+   ```
+
+2. **测试覆盖**：
+   - 页面加载无错误
+   - 表单提交正常
+   - 按钮点击响应
+   - 页面跳转正确
+   - Console 无 JavaScript 错误
+
+3. **截图存档**：测试截图保存到 `tests/screenshots/`
+
+### 测试检查清单 / Test Checklist
+
+- [ ] 功能代码编写完成
+- [ ] Playwright 测试脚本编写
+- [ ] 运行测试，截图记录
+- [ ] 测试全部通过（无错误）
+- [ ] 功能交付完美，才进行下一个
+
+### 依赖安装 / Dependencies
+
+```bash
+pip3 install playwright
+python3 -m playwright install chromium
+```
