@@ -36,6 +36,10 @@ def create_app(config_name='dev'):
     from app.blueprints.certificates import certificates_bp
     app.register_blueprint(certificates_bp)
 
+    # Phase 2 Wave 3 - statistics blueprint
+    from app.blueprints.statistics import statistics_bp
+    app.register_blueprint(statistics_bp)
+
     # Import models to register them with SQLAlchemy
     from app.models import user
 
