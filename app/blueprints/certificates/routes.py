@@ -2,7 +2,7 @@
 import os
 from flask import render_template, redirect, url_for, flash, send_file, abort, request, current_app, session
 from flask_login import login_required, current_user
-from app.extensions import db
+from app.extensions import db, csrf
 from app.models.certificate import Certificate
 from app.models.user import User
 from app.blueprints.certificates import certificates_bp
@@ -97,6 +97,7 @@ def edit(cert_id):
 
 @certificates_bp.route('/<int:cert_id>/delete', methods=['POST'])
 @login_required
+@csrf.exempt
 def delete(cert_id):
     """Delete certificate."""
     certificate = Certificate.query.get_or_404(cert_id)
@@ -126,6 +127,7 @@ def file(cert_id):
 
 @certificates_bp.route('/ocr/upload', methods=['GET', 'POST'])
 @login_required
+@csrf.exempt
 def ocr_upload():
     """OCR upload page - accepts certificate image/PDF, runs OCR, shows confirmation."""
     if request.method == 'GET':
@@ -192,6 +194,7 @@ def ocr_upload():
 
 @certificates_bp.route('/ocr/confirm', methods=['POST'])
 @login_required
+@csrf.exempt
 def ocr_confirm():
     """Confirm OCR results and save certificate."""
     import json
@@ -242,6 +245,7 @@ def ocr_confirm():
 @certificates_bp.route('/import', methods=['GET', 'POST'])
 @login_required
 @admin_required
+@csrf.exempt
 def import_batch():
     """Batch import certificates from Excel file (admin only).
 
