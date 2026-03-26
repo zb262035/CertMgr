@@ -37,14 +37,26 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('auth.login'))
     form = RegistrationForm()
+
+    # Validate department on submit
     if form.validate_on_submit():
+        if form.department.data == 0:
+            flash('请选择部门 / Please select a department.', 'danger')
+            return render_template('auth/register.html', form=form)
+
         # Check if email already exists
         existing_user = User.query.filter_by(email=form.email.data).first()
         if existing_user:
             flash('该邮箱已被注册 / This email is already registered.', 'danger')
             return render_template('auth/register.html', form=form)
-        # Create new user
-        user = User(email=form.email.data)
+
+        # Create new user with department
+        user = User(
+            email=form.email.data,
+            department_id=form.department.data,
+            role=User.ROLE_USER,
+            must_change_password=False  # User chose their own password
+        )
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()

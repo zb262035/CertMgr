@@ -7,6 +7,53 @@
     <div class="col-12">
         <h1 class="mb-4">用户管理 / User Management</h1>
 
+        <!-- Batch Actions -->
+        <div class="card mb-3" id="batch-actions-card" style="display: none;">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">批量操作 / Batch Actions</h5>
+            </div>
+            <div class="card-body">
+                <p>已选择 <span id="selected-count">0</span> 个用户</p>
+                {% if current_user.is_school_admin() %}
+                <div class="row mb-2">
+                    <div class="col-auto">
+                        <label class="col-form-label">批量设置部门：</label>
+                    </div>
+                    <div class="col-auto">
+                        <select class="form-select" id="batch-department-select">
+                            <option value="">请选择部门 / Select Department</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-success" onclick="batchSetDepartment()">
+                            确认设置 / Confirm
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="batchSetRole('dept_admin')">
+                        设为部门管理员 / Set Dept Admin
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="batchSetRole('user')">
+                        设为普通用户 / Set User
+                    </button>
+                    <button type="button" class="btn btn-info" onclick="batchResetPassword()">
+                        重置密码 / Reset Password
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="batchDelete()">
+                        删除 / Delete
+                    </button>
+                </div>
+                <button type="button" class="btn btn-outline-secondary" onclick="clearSelection()">
+                    取消选择 / Clear Selection
+                </button>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header bg-primary text-white">
                 <h4 class="mb-0">所有用户 / All Users</h4>
@@ -15,8 +62,12 @@
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
+                            <th>
+                                <input type="checkbox" id="select-all" onchange="toggleSelectAll()">
+                            </th>
                             <th>ID</th>
                             <th>邮箱 / Email</th>
+                            <th>部门 / Department</th>
                             <th>角色 / Role</th>
                             <th>状态 / Status</th>
                             <th>注册时间 / Registered</th>
@@ -26,6 +77,12 @@
                     <tbody>
                         {% for user in users %}
                         <tr class="{{ 'table-secondary' if user.is_disabled else '' }}">
+                            <td>
+                                <input type="checkbox" class="user-checkbox"
+                                       value="{{ user.id }}"
+                                       onchange="updateBatchActions()"
+                                       data-user-email="{{ user.email }}">
+                            </td>
                             <td>{{ user.id }}</td>
                             <td>
                                 {{ user.email }}
@@ -34,10 +91,19 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if user.is_admin %}
-                                    <span class="badge bg-danger">管理员 / Admin</span>
+                                {% if user.department %}
+                                    <span class="badge bg-secondary">{{ user.department.name }}</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">用户 / User</span>
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_school_admin() %}
+                                    <span class="badge bg-danger">校级管理员 / School Admin</span>
+                                {% elif user.is_dept_admin() %}
+                                    <span class="badge bg-warning text-dark">部门管理员 / Dept Admin</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">普通用户 / User</span>
                                 {% endif %}
                             </td>
                             <td>
@@ -51,12 +117,17 @@
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     {% if user.id != current_user.id %}
-                                        <form method="POST" action="{{ url_for('admin.toggle_admin', user_id=user.id) }}" style="display:inline;">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-warning">
-                                                {% if user.is_admin %}撤销管理员{% else %}设为管理员{% endif %}
-                                            </button>
-                                        </form>
+                                        {% if user.is_school_admin() %}
+                                            <form method="POST" action="{{ url_for('admin.set_user_role', user_id=user.id, role='user') }}" style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-warning">降级 / Demote</button>
+                                            </form>
+                                        {% else %}
+                                            <form method="POST" action="{{ url_for('admin.set_user_role', user_id=user.id, role='dept_admin') }}" style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-warning">升为部门管理员 / Promote</button>
+                                            </form>
+                                        {% endif %}
                                         <form method="POST" action="{{ url_for('admin.toggle_disabled', user_id=user.id) }}" style="display:inline;">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-secondary">
@@ -85,7 +156,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="6" class="text-center text-muted">暂无用户 / No users yet</td>
+                            <td colspan="8" class="text-center text-muted">暂无用户 / No users yet</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -94,4 +165,118 @@
         </div>
     </div>
 </div>
+
+<!-- Batch Action Forms (Hidden) -->
+<form id="batch-set-role-form" method="POST" action="{{ url_for('admin.batch_set_role') }}" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="user_ids" id="batch-role-user-ids">
+    <input type="hidden" name="role" id="batch-role-value">
+</form>
+
+<form id="batch-reset-password-form" method="POST" action="{{ url_for('admin.batch_reset_password') }}" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="user_ids" id="batch-reset-user-ids">
+</form>
+
+<form id="batch-delete-form" method="POST" action="{{ url_for('admin.batch_delete') }}" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="user_ids" id="batch-delete-user-ids">
+</form>
+
+<form id="batch-set-department-form" method="POST" action="{{ url_for('admin.batch_set_department') }}" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="user_ids" id="batch-department-user-ids">
+    <input type="hidden" name="department_id" id="batch-department-id">
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleSelectAll() {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    updateBatchActions();
+}
+
+function updateBatchActions() {
+    const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+    const count = checkboxes.length;
+    const card = document.getElementById('batch-actions-card');
+    const countSpan = document.getElementById('selected-count');
+
+    if (count > 0) {
+        card.style.display = 'block';
+        countSpan.textContent = count;
+    } else {
+        card.style.display = 'none';
+    }
+
+    // Update select all checkbox state
+    const allCheckboxes = document.querySelectorAll('.user-checkbox');
+    const selectAll = document.getElementById('select-all');
+    selectAll.checked = checkboxes.length === allCheckboxes.length && allCheckboxes.length > 0;
+    selectAll.indeterminate = checkboxes.length > 0 && checkboxes.length < allCheckboxes.length;
+}
+
+function clearSelection() {
+    document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('select-all').checked = false;
+    updateBatchActions();
+}
+
+function getSelectedIds() {
+    const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function batchSetRole(role) {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
+    if (!confirm(`确定将 ${ids.length} 个用户设为 ${role === 'dept_admin' ? '部门管理员' : '普通用户'}？`)) return;
+
+    document.getElementById('batch-role-user-ids').value = ids.join(',');
+    document.getElementById('batch-role-value').value = role;
+    document.getElementById('batch-set-role-form').submit();
+}
+
+function batchResetPassword() {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
+    if (!confirm(`确定重置 ${ids.length} 个用户的密码？`)) return;
+
+    document.getElementById('batch-reset-user-ids').value = ids.join(',');
+    document.getElementById('batch-reset-password-form').submit();
+}
+
+function batchDelete() {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
+    if (!confirm(`确定删除 ${ids.length} 个用户？此操作不可撤销！`)) return;
+
+    document.getElementById('batch-delete-user-ids').value = ids.join(',');
+    document.getElementById('batch-delete-form').submit();
+}
+
+function batchSetDepartment() {
+    const ids = getSelectedIds();
+    if (ids.length === 0) return;
+    const deptId = document.getElementById('batch-department-select').value;
+    if (!deptId) {
+        alert('请选择部门 / Please select a department.');
+        return;
+    }
+    if (!confirm(`确定将 ${ids.length} 个用户移到所选部门？`)) return;
+
+    document.getElementById('batch-department-user-ids').value = ids.join(',');
+    document.getElementById('batch-department-id').value = deptId;
+    document.getElementById('batch-set-department-form').submit();
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateBatchActions();
+});
+</script>
 {% endblock %}

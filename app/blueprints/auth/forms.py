@@ -1,7 +1,14 @@
 """Authentication forms with WTForms validation."""
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField
 from wtforms.validators import DataRequired, Email, EqualTo, Length
+from app.models.department import Department
+
+
+def get_department_choices():
+    """Get active departments as choices for select field."""
+    departments = Department.query.filter_by(status='active').order_by(Department.name).all()
+    return [(str(d.id), d.name) for d in departments]
 
 
 class RegistrationForm(FlaskForm):
@@ -10,6 +17,9 @@ class RegistrationForm(FlaskForm):
         DataRequired(message='邮箱不能为空'),
         Email(message='请输入有效的邮箱地址')
     ])
+    department = SelectField('部门 / Department', validators=[
+        DataRequired(message='请选择部门')
+    ], coerce=int)
     password = PasswordField('密码 / Password', validators=[
         DataRequired(message='密码不能为空'),
         Length(min=8, message='密码至少需要8个字符')
@@ -19,6 +29,10 @@ class RegistrationForm(FlaskForm):
         EqualTo('password', message='两次输入的密码不一致')
     ])
     submit = SubmitField('注册 / Register')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.department.choices = [(0, '请选择部门 / Select Department')] + get_department_choices()
 
 
 class LoginForm(FlaskForm):
