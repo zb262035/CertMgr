@@ -59,6 +59,13 @@ This document lists all project documents and their purpose. All new or modified
 | `phases/01-foundation/01-SUMMARY.md` | Phase 1 完成总结 / Phase 1 summary | Phase 1 完成内容、文件列表、验证状态 |
 | `phases/{N}-{name}/PLAN.md` | 阶段执行计划 / Phase execution plan | Phase N 的具体任务列表 |
 | `phases/{N}-{name}/SUMMARY.md` | 阶段完成总结 / Phase summary | Phase N 的完成内容、验证状态 |
+| `PHASE-4/01-权限系统设计.md` | Phase 4 权限系统设计 / Phase 4 permission system design | 三级权限体系、部门管理、批量操作、导航栏设计 |
+
+### 待讨论文档 / Pending Documents
+
+| 文档 | 功能 | 说明 |
+|------|------|------|
+| `PENDING/02-标志性成果管理需求.md` | 标志性成果管理需求 / Iconic achievements requirements | 成果类型扩展、分值体系、字段灵活性 |
 
 ---
 
@@ -115,6 +122,8 @@ This document lists all project documents and their purpose. All new or modified
 | 2026-03-24 | 添加 phases/02-core/02-CONTEXT.md 和 02-PLAN.md；Phase 2 规划完成 | Claude |
 | 2026-03-24 | 添加 Phase 2 完成文档（Wave 1-3 summaries, verification）；添加 certificates/statistics blueprints、ocr_service、certificate 模型到文档索引 | Claude |
 | 2026-03-24 | 改进 tests/test_ui.py：添加测试结果汇总、自动创建测试数据、更好的错误检测；更新测试目录文档 | Claude |
+| 2026-03-26 | 创建 Phase 4 权限系统设计文档和标志性成果需求待讨论文档 | Claude |
+| 2026-03-26 | 更新状态：Phase 3 已完成（8/8 UI测试通过），Phase 4 进行中 | Claude |
 
 ---
 
