@@ -14,7 +14,7 @@
         <div class="card-header">识别结果 / Recognition Result</div>
         <div class="card-body">
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-7">
                     <div class="mb-3">
                         <label class="form-label">证书类型 *</label>
                         <select name="certificate_type" id="certificate_type" class="form-select" required>
@@ -32,11 +32,34 @@
                                value="{{ ocr_result.title or '' }}">
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="alert alert-info">
-                        <strong>文件名 / Filename:</strong> {{ filename }}<br>
-                        <strong>识别类型 / Detected Type:</strong> {{ ocr_result.type }}<br>
-                        <strong>可信度 / Confidence:</strong> {{ '高 / High' if ocr_result.fields else '低 / Low - please verify' }}
+                <div class="col-md-5">
+                    {% if stored_filename and dated_folder %}
+                    <div class="text-center">
+                        <img src="{{ url_for('certificates.uploaded_file', folder=dated_folder, filename=stored_filename) }}"
+                             alt="Certificate preview" class="img-thumbnail" style="max-height: 200px;">
+                        <p class="text-muted small mt-1">{{ filename }}</p>
+                    </div>
+                    {% endif %}
+                    {% set confidence_score = ocr_result.confidence.score|default(0) %}
+                    {% set confidence_issues = ocr_result.confidence.issues|default([]) %}
+                    <div class="alert {% if confidence_score >= 80 %}alert-success{% elif confidence_score >= 50 %}alert-warning{% else %}alert-danger{% endif %} mt-2">
+                        <strong>识别质量 / Recognition Quality:</strong>
+                        <div class="progress mt-1 mb-2" style="height: 8px;">
+                            <div class="progress-bar {% if confidence_score >= 80 %}bg-success{% elif confidence_score >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                 role="progressbar" style="width: {{ confidence_score }}%;">
+                            </div>
+                        </div>
+                        <small>{{ confidence_score|int }}% {% if confidence_score >= 80 %}(良好){% elif confidence_score >= 50 %}(一般){% else %}(需人工确认){% endif %}</small>
+                        {% if confidence_issues %}
+                        <div class="mt-2">
+                            <small class="text-muted"><strong>问题:</strong></small>
+                            <ul class="mb-0 mt-1" style="font-size: 0.85em;">
+                            {% for issue in confidence_issues %}
+                                <li>{{ issue }}</li>
+                            {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

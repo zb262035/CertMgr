@@ -125,6 +125,16 @@ def file(cert_id):
     return send_file(file_full_path, mimetype=certificate.file_mime_type)
 
 
+@certificates_bp.route('/uploads/<path:folder>/<filename>')
+@login_required
+def uploaded_file(folder, filename):
+    """Serve uploaded file by folder and filename."""
+    file_full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], folder, filename)
+    if not os.path.exists(file_full_path):
+        abort(404)
+    return send_file(file_full_path)
+
+
 @certificates_bp.route('/ocr/upload', methods=['GET', 'POST'])
 @login_required
 @csrf.exempt
@@ -151,24 +161,37 @@ def ocr_upload():
         return redirect(request.url)
 
     try:
-        # Save file temporarily for OCR
+        # Save file with UUID filename for persistence
         import uuid
-        temp_filename = f'ocr_temp_{uuid.uuid4().hex}.{ext}'
-        temp_path = os.path.join(current_app.config['UPLOAD_FOLDER'], temp_filename)
-        file.save(temp_path)
+        from datetime import datetime
+        import shutil
 
-        # Run OCR
+        # Generate UUID-based filename
+        cert_uuid = uuid.uuid4().hex
+        dated_folder = datetime.now().strftime('%Y/%m')
+        dated_path = os.path.join(current_app.config['UPLOAD_FOLDER'], dated_folder)
+
+        # Create dated folder if not exists
+        os.makedirs(dated_path, exist_ok=True)
+
+        # Save with UUID name
+        stored_filename = f'{cert_uuid}.{ext}'
+        stored_path = os.path.join(dated_path, stored_filename)
+        file.save(stored_path)
+
+        # Run OCR on the saved file
         from app.services.ocr_service import OCRService
         result = OCRService.recognize_certificate(
-            temp_path,
+            stored_path,
             file.content_type or f'application/{ext}'
         )
 
-        # Clean up temp file
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        # Don't delete the file - keep it for certificate
 
         if not result['success']:
+            # Clean up file if OCR failed
+            if os.path.exists(stored_path):
+                os.remove(stored_path)
             flash(result.get('error', 'OCR识别失败 / OCR recognition failed'), 'danger')
             return redirect(request.url)
 
@@ -178,13 +201,18 @@ def ocr_upload():
             'type': result['type'],
             'title': result['title'],
             'fields': result['fields'],
+            'confidence': result.get('confidence', {}),
             'file_mime_type': file.content_type,
             'filename': file.filename,
+            'stored_filename': stored_filename,
+            'dated_folder': dated_folder,
         }
 
         return render_template('certificates/ocr_confirm.html',
                                ocr_result=result,
                                filename=file.filename,
+                               stored_filename=stored_filename,
+                               dated_folder=dated_folder,
                                FIELD_SCHEMAS=FIELD_SCHEMAS)
 
     except Exception as e:
@@ -218,12 +246,13 @@ def ocr_confirm():
             flash('未找到证书类型 / Certificate type not found', 'danger')
             return redirect(url_for('certificates.ocr_upload'))
 
-        # Create certificate (no file for OCR flow - file_path will be empty)
+        # Create certificate with stored file path
+        file_path = os.path.join(ocr_result.get('dated_folder', ''), ocr_result.get('stored_filename', ''))
         certificate = Certificate(
             user_id=current_user.id,
             title=title,
             certificate_type_id=cert_type.id,
-            file_path='',  # OCR flow doesn't store file yet
+            file_path=file_path,
             original_filename=ocr_result.get('filename', ''),
             file_mime_type=ocr_result.get('file_mime_type', ''),
             fields=dynamic_fields

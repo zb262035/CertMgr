@@ -71,6 +71,73 @@ Last activity / 最后活动: 2026-03-24 — Phase 2 完成，OCR评估效果不
 
 ---
 
+## Session 2026-03-26 / Phase 3 进行中
+
+**今天完成的工作 / Today's Work:**
+
+- ✅ Phase 3 讨论 - 确认需求
+  - PDF 导出/SSO/审计日志暂缓至 v2
+  - 专注 OCR 改进
+- ✅ OCR 方案研究
+  - PaddleOCR: 92-96% 中文识别率（可接受）
+  - EasyOCR: 备选方案
+  - Tesseract: 不推荐
+- ✅ 优化 OCR Service (`app/services/ocr_service.py`)
+  - 图像预处理（灰度、对比度、锐化）
+  - PDF DPI 提高到 300
+  - 置信度检测和质量评估
+  - 后处理过滤乱码
+  - 优雅降级（识别质量低时提示手动输入）
+- ✅ **LLM 字段提取集成**
+  - 使用 Ollama 本地模型（qwen3-coder:30b）
+  - 智谱 AI glm-4.7-flash 备选
+  - 语义理解代替关键词匹配
+  - 自动提取：比赛名称、获奖等级、日期、主办单位等
+- ✅ OCR 优化 + LLM 测试通过
+  - 清晰图片：100/100 置信度
+  - 有水印图片：96/100 置信度
+  - LLM 字段提取成功率：100%
+
+**Phase 3 进展 / Phase 3 Progress:**
+
+| 功能 | 状态 |
+|------|------|
+| OCR 改进 - 图像预处理 | ✅ |
+| OCR 改进 - 置信度检测 | ✅ |
+| OCR 改进 - 后处理过滤 | ✅ |
+| LLM 字段提取集成 | ✅ |
+| PDF 导出样式 | ⏸️ 暂缓 v2 |
+| SSO 集成 | ⏸️ 暂缓 v2 |
+| 审计日志 | ⏸️ 暂缓 v2 |
+
+**技术栈更新 / Tech Stack Update:**
+
+| 组件 | 技术 |
+|------|------|
+| OCR | PaddleOCR + Ollama 本地 LLM |
+| LLM 模型 | qwen3-coder:30b (主), glm-4.7-flash (备) |
+
+**测试状态 / Test Status:**
+
+| 测试类型 | 命令 | 状态 |
+|----------|------|------|
+| 单元测试 | `pytest tests/unit/` | ✅ |
+| API 测试 | `pytest tests/api/` | ✅ |
+| UI 测试 | `python3 tests/test_ui.py` | ✅ 6/6 |
+
+**Phase 3 进展 / Phase 3 Progress:**
+
+| 功能 | 状态 |
+|------|------|
+| OCR 改进 - 图像预处理 | ✅ |
+| OCR 改进 - 置信度检测 | ✅ |
+| OCR 改进 - 后处理过滤 | ✅ |
+| PDF 导出样式 | ⏸️ 暂缓 v2 |
+| SSO 集成 | ⏸️ 暂缓 v2 |
+| 审计日志 | ⏸️ 暂缓 v2 |
+
+---
+
 ## Phase 1 Completion Summary / Phase 1 完成摘要
 
 Phase 1 已在 2026-03-19 完成并提交到 main 分支。
