@@ -1,257 +1,71 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: unknown
-last_updated: "2026-03-24T03:28:46.793Z"
+milestone: v1.1
+milestone_name: Excel导出功能
+status: planning
+last_updated: "2026-04-20"
 progress:
-  total_phases: 3
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 1
+  completed_plans: 0
 ---
 
 # State: CertMgr / 状态：CertMgr
 
 ## Project Reference / 项目引用
 
-See / 参见: `.planning/PROJECT.md` (updated / 更新 2026-03-19)
+See / 参见: `.planning/PROJECT.md` (updated / 更新 2026-04-20)
 
 **Core value / 核心价值:** Faculty/staff certificate assets are safe, accessible, and traceable. / 教职工的证书资产安全、便捷、可追溯。
-**Current focus / 当前重点:** Phase 2 - Core / 第二阶段 - 核心功能 (已完成，OCR暂缓至Phase 3)
+**Current focus / 当前重点:** v1.1 统计报表导出功能 (Phase 6)
 
 ---
 
 ## Current Position / 当前状态
 
-Phase / 阶段: 2 of 3 (Core / 核心功能)
-Status / 状态: **COMPLETED / 已完成**
-Last activity / 最后活动: 2026-03-24 — Phase 2 完成，OCR评估效果不理想移至Phase 3
+Phase / 阶段: Phase 6 (Excel 导出功能) — **Planning**
+Status / 状态: **Defining requirements / 需求定义中**
+Last activity / 最后活动: 2026-04-20 — v1.1 milestone started
 
-**Phase 1 Progress / Phase 1 进度:** [████████████████████] 100%
-
-**Phase 2 Progress / Phase 2 进度:** [████████████████████] 3/3 plans complete — Wave 1 + Wave 2 + Wave 3 + OCR探索(未完成)
-
-**Phase 2 备注:** OCR功能(PaddleOCR)评估完成，效果不佳，移至Phase 3继续研究
+**Phase 6 Progress / Phase 6 进度:** [░░░░░░░░░░░░░░░░░░░░░] 0%
 
 ---
 
-## Session 2026-03-24 (续) / Evening Session
+## Current Milestone / 当前里程碑
+
+**v1.1: Excel 导出功能 / Certificate List Excel Export**
+
+**Requirements / 需求:**
+- RPT-01: 用户可在证书列表页导出当前筛选结果的证书清单
+- RPT-02: 导出包含：标题、持有人、部门、证书类型、获奖日期、颁发机构、创建时间
+- RPT-03: 导出文件名为 `证书清单_YYYYMMDD_HHmmss.xlsx`
+- RPT-04: 支持导出全部证书或按筛选条件导出
+- RPT-05: 管理员可导出所有证书，普通用户只能导出自己的
+
+**Implementation approach / 实现方案:**
+- 使用 openpyxl 库生成 .xlsx 文件
+- 后端 API: GET /certificates/api/export
+- 前端: 在证书列表页添加导出按钮
+
+---
+
+## Session 2026-04-20 / v1.1 Excel 导出功能
 
 **今天完成的工作 / Today's Work:**
 
-- ✅ 修复证书卡片点击无反应问题
-- ✅ 修复删除功能（空路径误删目录bug）
-- ✅ 修复 API 信息泄露（recordsTotal）
-- ✅ 添加 jQuery 支持 DataTables
-- ✅ 权限审查并修复安全问题
-- ✅ 改进 UI 测试（自动数据创建、测试结果汇总）
-- ✅ 添加测试数据（7个证书图片）
-- ✅ 修复缺失的 statistics/dashboard.html 模板
-- ✅ 6/6 UI 测试全部通过
+- ✅ 确认需求：证书清单导出（不是统计报表）
+- ✅ 确认格式：Excel (.xlsx)
+- ✅ 定义需求：RPT-01 ~ RPT-05
+- ✅ 创建 Roadmap: Phase 6
 
-**提交记录 / Commits:**
+**下一步 / Next Step:**
 
-- `6d73255` - test: improve UI test with auto data creation
-- `0c0cbf4` - docs: update document index
-- `5a9e94b` - test: add sample certificates for UI testing
-- `2a3b3cf` - fix: add missing statistics dashboard template
-
-**测试状态 / Test Status:**
-
-| 测试类型 | 命令 | 状态 |
-|----------|------|------|
-| 单元测试 | `pytest tests/unit/` | ✅ |
-| API 测试 | `pytest tests/api/` | ✅ |
-| UI 测试 | `python3 tests/test_ui.py` | ✅ 6/6 |
-
-**明天 / Tomorrow:**
-
-- Phase 3: OCR增强、证书模板、SSO集成
+- Phase 6 Plan 1: 实现 Excel 导出功能
+  - 后端 API: /certificates/api/export
+  - 前端: 证书列表页添加导出按钮
+  - 使用 openpyxl 生成 Excel
 
 ---
 
-## Session 2026-03-26 / Phase 3 进行中
-
-**今天完成的工作 / Today's Work:**
-
-- ✅ Phase 3 讨论 - 确认需求
-  - PDF 导出/SSO/审计日志暂缓至 v2
-  - 专注 OCR 改进
-- ✅ OCR 方案研究
-  - PaddleOCR: 92-96% 中文识别率（可接受）
-  - EasyOCR: 备选方案
-  - Tesseract: 不推荐
-- ✅ 优化 OCR Service (`app/services/ocr_service.py`)
-  - 图像预处理（灰度、对比度、锐化）
-  - PDF DPI 提高到 300
-  - 置信度检测和质量评估
-  - 后处理过滤乱码
-  - 优雅降级（识别质量低时提示手动输入）
-- ✅ **LLM 字段提取集成**
-  - 使用 Ollama 本地模型（qwen3-coder:30b）
-  - 智谱 AI glm-4.7-flash 备选
-  - 语义理解代替关键词匹配
-  - 自动提取：比赛名称、获奖等级、日期、主办单位等
-- ✅ OCR 优化 + LLM 测试通过
-  - 清晰图片：100/100 置信度
-  - 有水印图片：96/100 置信度
-  - LLM 字段提取成功率：100%
-
-**Phase 3 进展 / Phase 3 Progress:**
-
-| 功能 | 状态 |
-|------|------|
-| OCR 改进 - 图像预处理 | ✅ |
-| OCR 改进 - 置信度检测 | ✅ |
-| OCR 改进 - 后处理过滤 | ✅ |
-| LLM 字段提取集成 | ✅ |
-| PDF 导出样式 | ⏸️ 暂缓 v2 |
-| SSO 集成 | ⏸️ 暂缓 v2 |
-| 审计日志 | ⏸️ 暂缓 v2 |
-
-**技术栈更新 / Tech Stack Update:**
-
-| 组件 | 技术 |
-|------|------|
-| OCR | PaddleOCR + Ollama 本地 LLM |
-| LLM 模型 | qwen3-coder:30b (主), glm-4.7-flash (备) |
-
-**测试状态 / Test Status:**
-
-| 测试类型 | 命令 | 状态 |
-|----------|------|------|
-| 单元测试 | `pytest tests/unit/` | ✅ |
-| API 测试 | `pytest tests/api/` | ✅ |
-| UI 测试 | `python3 tests/test_ui.py` | ✅ 6/6 |
-
-**Phase 3 进展 / Phase 3 Progress:**
-
-| 功能 | 状态 |
-|------|------|
-| OCR 改进 - 图像预处理 | ✅ |
-| OCR 改进 - 置信度检测 | ✅ |
-| OCR 改进 - 后处理过滤 | ✅ |
-| PDF 导出样式 | ⏸️ 暂缓 v2 |
-| SSO 集成 | ⏸️ 暂缓 v2 |
-| 审计日志 | ⏸️ 暂缓 v2 |
-
----
-
-## Phase 1 Completion Summary / Phase 1 完成摘要
-
-Phase 1 已在 2026-03-19 完成并提交到 main 分支。
-
-**Commits / 提交:**
-
-- `041b669` - feat(phase-1): Flask application factory and project structure
-- `fe79204` - feat(phase-1): user authentication with register/login/logout
-- `6816756` - feat(phase-1): file storage service and permission decorators
-- `12d4352` - fix(phase-1): navigation, user management, and certificates stub
-- `0cb062b` - docs(phase-2): planning complete with 3 waves, decisions, research
-
-**What was built / 完成内容:**
-
-- ✅ Flask 应用工厂 (`create_app()`)
-- ✅ User 模型 (PBKDF2 密码哈希)
-- ✅ 认证模块 (注册/登录/登出)
-- ✅ 文件存储服务 (UUID 命名、日期分片)
-- ✅ 权限装饰器 (`@admin_required`)
-- ✅ Admin 用户管理 (`/admin/users`)
-
-**Phase 1 补充 / Phase 1 Supplement (2026-03-23):**
-
-- ✅ 完整导航栏 (首页/证书/上传/管理/个人中心)
-- ✅ 操作反馈 (Flash messages)
-- ✅ 用户管理增强 (禁用/启用、重置密码)
-- ✅ 用户个人中心 (修改密码)
-
----
-
-## Phase 2 Planning Summary / Phase 2 规划摘要
-
-**Phase 2 已在 2026-03-24 完成规划。**
-
-**Wave 结构 / Wave Structure:**
-
-| Wave | 任务 | 文件数 |
-|------|------|--------|
-| Wave 1 | Certificate 模型 + CRUD + 卡片模板 | 10 |
-| Wave 2 | DataTables API + 搜索/筛选 + Excel 导入 | 5 |
-| Wave 3 | Chart.js 统计面板 | 4 |
-
-**用户决策 / User Decisions:**
-
-- 证书列表布局: 卡片布局
-- 动态字段: 同一页面动态切换
-- 搜索/筛选位置: 列表页顶部
-- 统计面板: 详细统计
-- Excel批量导入: 自动解析
-- 编辑/删除入口: 详情页操作
-
-**Phase 2 执行状态 / Phase 2 Execution Status:**
-
-- **Wave 1 (Plan 01):** ✅ 完成 - Certificate 模型、CRUD 路由、服务、模板
-  - Commits: `8245ef6`, `51d454c`, `5ff74f3`, `c92d494`
-- **Wave 2 (Plan 02):** ✅ 完成 - DataTables API、搜索/筛选、Excel 批量导入
-  - Commits: `3ffd35e`, `99ee52c`, `31b7111`, `aa024b2`
-- **Wave 3 (Plan 03):** ✅ 完成 - Chart.js 统计面板
-  - Commits: `0175a92`, `18021f8`
-- **OCR 探索 (Plan 04):** ⏸️ 暂缓 - PaddleOCR 评估效果不理想，移至 Phase 3
-  - 发现：PDF矢量字体识别差，速度慢
-  - 决策：保留代码，移至 Phase 3 继续研究
-
----
-
-## Performance Metrics / 性能指标
-
-**Velocity / 速度:**
-
-- Total plans completed / 已完成计划总数: 3
-- Average duration / 平均时长: N/A
-- Total execution time / 总执行时间: ~2 hours / 小时
-
-**By Phase / 按阶段:**
-
-| Phase / 阶段 | Plans / 计划 | Total / 总计 | Avg/Plan / 平均/计划 |
-|--------------|--------------|--------------|---------------------|
-| 1. Foundation | 3/3 | Complete | ~40 min |
-
-**Recent Trend / 最近趋势:**
-
-- Phase 1 completed successfully
-
----
-
-## Accumulated Context / 累积上下文
-
-### Decisions / 决策
-
-From research (2026-03-19) / 来自研究 (2026-03-19):
-
-- Phase 1 / 第一阶段: Use Flask app factory pattern with extensions.py / 使用 Flask 应用工厂模式和 extensions.py
-- Phase 1 / 第一阶段: JSONB for dynamic certificate fields (not EAV) / 使用 JSONB 存储动态证书字段（不用 EAV）
-- Phase 1 / 第一阶段: UUID-based file naming with date sharding / 使用 UUID 文件命名和日期分片
-- Phase 2 / 第二阶段: Use DataTables for server-side pagination / 使用 DataTables 实现服务器端分页
-- Phase 3 / 第三阶段: Use ReportLab (not WeasyPrint) for PDF on Windows Server / 使用 ReportLab（不用 WeasyPrint）用于 Windows Server 上的 PDF
-- Phase 3 / 第三阶段: Waitress (not Gunicorn) for Windows-compatible WSGI / 使用 Waitress（不用 Gunicorn）实现 Windows 兼容的 WSGI
-
-### Pending Todos / 待办事项
-
-- [x] Phase 2: Create Certificate model and blueprint
-- [x] Phase 2: Implement certificate CRUD (upload, list, edit, delete)
-- [x] Phase 2: Implement search and filtering
-- [x] Phase 2: Implement batch import from Excel
-- [x] Phase 2: Implement statistics dashboard (Wave 3 - Plan 03)
-
-### Blockers/Concerns / 阻碍/关注
-
-None yet. / 暂无。
-
----
-
-## Session Continuity / 会话连续性
-
-Last session / 最后会话: 2026-03-24
-Stopped at / 停止于: Phase 2 全部完成 — Wave 1 + Wave 2 + Wave 3 executed, summaries created
-Resume file / 恢复文件: None / 无
+*Last updated: 2026-04-20 after v1.1 milestone started*
