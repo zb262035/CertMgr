@@ -13,13 +13,13 @@ import requests
 OLLAMA_API = "http://localhost:11434/api/generate"
 
 # Default model for certificate field extraction
-DEFAULT_MODEL = "qwen3-coder:30b"
+DEFAULT_MODEL = "deepseek-r1:8b"
 
 # Fallback model (faster for simple tasks)
 FALLBACK_MODEL = "deepseek-r1:8b"
 
-# Certificate type schemas for field extraction
-CERTIFICATE_SCHEMAS = {
+# Seed schemas - only used when database has no CertificateType records
+SEED_CERTIFICATE_SCHEMAS = {
     '比赛获奖证书': {
         'description': '比赛获奖证书，包括竞赛名称、获奖等级、获奖日期、主办单位等',
         'fields': [
@@ -57,6 +57,17 @@ CERTIFICATE_SCHEMAS = {
             {'name': 'certificate_number', 'label': '证书编号', 'type': 'string', 'required': True},
             {'name': 'issue_date', 'label': '发证日期', 'type': 'date', 'required': True},
             {'name': 'issuing_authority', 'label': '发证机构', 'type': 'string', 'required': True},
+        ]
+    },
+    '毕业证': {
+        'description': '毕业证书，包括学校名称、学生姓名、专业、学历层次、毕业时间等',
+        'fields': [
+            {'name': 'school_name', 'label': '学校名称', 'type': 'string', 'required': True},
+            {'name': 'student_name', 'label': '学生姓名', 'type': 'string', 'required': True},
+            {'name': 'major', 'label': '专业', 'type': 'string', 'required': True},
+            {'name': 'degree', 'label': '学历层次', 'type': 'select', 'options': ['高中', '中专', '大专', '本科', '硕士', '博士'], 'required': True},
+            {'name': 'graduation_date', 'label': '毕业时间', 'type': 'date', 'required': True},
+            {'name': 'certificate_number', 'label': '证书编号', 'type': 'string', 'required': False},
         ]
     },
 }
@@ -102,8 +113,44 @@ def extract_fields_with_llm(
             "error": "文字内容太少"
         }
 
-    # Get schema for certificate type
-    schema = CERTIFICATE_SCHEMAS.get(cert_type, CERTIFICATE_SCHEMAS['荣誉证书'])
+    # Try to get schema from database first
+    schema = None
+    try:
+        from app.models.certificate import CertificateType
+        ct = CertificateType.query.filter_by(name=cert_type).first()
+        if ct and ct.get_schema():
+            # Build schema from database
+            schema_fields = []
+            for field in ct.get_schema():
+                field_def = {
+                    'name': field.get('name'),
+                    'label': field.get('label'),
+                    'type': field.get('type', 'string'),
+                    'required': field.get('required', False)
+                }
+                if field.get('options'):
+                    field_def['options'] = field.get('options')
+                schema_fields.append(field_def)
+            schema = {
+                'description': f'{cert_type}，包括{"、".join([f["label"] for f in schema_fields])}等',
+                'fields': schema_fields
+            }
+    except Exception:
+        pass
+
+    # Fallback to hardcoded schema if not found in database
+    if not schema:
+        schema = SEED_CERTIFICATE_SCHEMAS.get(cert_type)
+
+    # If still not found, use generic schema
+    if not schema:
+        schema = SEED_CERTIFICATE_SCHEMAS.get('荣誉证书', {
+            'description': f'{cert_type}证书',
+            'fields': [
+                {'name': 'field1', 'label': '字段1', 'type': 'string', 'required': False},
+            ]
+        })
+
     schema_json = json.dumps(schema, ensure_ascii=False, indent=2)
 
     # Build prompt for field extraction
@@ -152,7 +199,7 @@ def extract_fields_with_llm(
                 "stream": False,
                 "options": {
                     "temperature": 0.1,  # Low temperature for consistent extraction
-                    "num_predict": 512,   # Limit response length
+                    "num_predict": 1024,  # More tokens for reasoning models
                 }
             },
             timeout=120  # 2 minutes timeout for large models

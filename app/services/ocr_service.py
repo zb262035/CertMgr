@@ -1,30 +1,22 @@
-"""OCR Service using PaddleOCR for local certificate recognition.
+"""OCR Service using Ollama VLM + PaddleOCR fallback for local certificate recognition.
 
-Optimized version with:
-- Image preprocessing (grayscale, contrast enhancement, sharpening)
-- PDF DPI increased to 300 for better quality
-- Confidence detection and quality assessment
-- Post-processing to filter noise
-- Graceful degradation when OCR quality is low
+Primary: Ollama Vision Model (glm-ocr) via REST API
+Fallback: PaddleOCR (CPU)
+
+Image preprocessing: macOS sips (built-in, no Pillow needed for VLM path)
 """
 
 import os
 import re
 from datetime import datetime
 from typing import Optional
+
 from paddleocr import PaddleOCR
 from PIL import Image, ImageEnhance, ImageFilter
 import numpy as np
+import pdf2image
 
-# Initialize PaddleOCR (Chinese + English)
-# OCR results cached in class to avoid re-initialization
-_ocr_engine = None
-
-def get_ocr_engine():
-    global _ocr_engine
-    if _ocr_engine is None:
-        _ocr_engine = PaddleOCR(lang='ch')
-    return _ocr_engine
+from app.services.ollama_vlm_ocr import OllamaVLMOCR
 
 
 def preprocess_image(image_path: str) -> str:
@@ -212,6 +204,7 @@ TYPE_KEYWORDS = {
     '荣誉证书': ['荣誉', '授予', '称号', '荣誉称号', '授予单位'],
     '资格证': ['资格证书', '职业资格', '证书编号', '有效期', '资格'],
     '职业技能等级证书': ['职业技能', '等级证书', '初级工', '中级工', '高级工', '技师', '高级技师'],
+    '毕业证': ['毕业', '学历', '学位', '毕业证书', '学士学位', '硕士学位', '博士学位'],
 }
 
 
@@ -260,34 +253,47 @@ class OCRService:
                 # Fallback to original if preprocessing fails
                 preprocessed_path = file_path
 
-            # Step 3: Run OCR
-            try:
-                ocr = get_ocr_engine()
-                result = ocr.predict(preprocessed_path)
-            except Exception as e:
-                return {
-                    'success': False,
-                    'error': f'OCR识别失败 / OCR recognition failed: {str(e)}',
-                    'confidence': {'score': 0, 'issues': ['OCR识别失败']}
-                }
-
-            # Step 4: Parse OCR result
+            # Step 3: Run OCR — Ollama VLM first, PaddleOCR fallback
             text_lines = []
-            for res in result:
-                if isinstance(res, dict):
-                    for text in res.get('rec_texts', []):
-                        text_lines.append(text)
-                elif isinstance(res, list) and len(res) >= 2:
-                    text_lines.append(res[1][0])
+            ocr_method = None
+            vlm_meta = {}
 
-            # Step 5: Calculate quality metrics
+            # 3a: Try Ollama VLM (glm-ocr)
+            try:
+                vlm_ocr = OllamaVLMOCR()
+                if vlm_ocr.is_available():
+                    text_lines, vlm_meta = vlm_ocr.recognize(preprocessed_path)
+                    ocr_method = "ollama_vlm"
+            except Exception:
+                pass
+
+            # 3b: Fallback to PaddleOCR if VLM failed or returned nothing
+            if not text_lines:
+                try:
+                    ocr = PaddleOCR(lang='ch')
+                    result = ocr.predict(preprocessed_path)
+                    for res in result:
+                        if isinstance(res, dict):
+                            for text in res.get('rec_texts', []):
+                                text_lines.append(text)
+                        elif isinstance(res, list) and len(res) >= 2:
+                            text_lines.append(res[1][0])
+                    ocr_method = "paddleocr"
+                except Exception as e:
+                    return {
+                        'success': False,
+                        'error': f'OCR识别失败 / OCR recognition failed: {str(e)}',
+                        'confidence': {'score': 0, 'issues': ['OCR识别失败']}
+                    }
+
+            # Step 4: Calculate quality metrics
             quality = calculate_text_quality(text_lines)
 
-            # Step 6: Clean text
+            # Step 5: Clean text
             cleaned_lines = clean_text(text_lines)
             full_text = '\n'.join(cleaned_lines)
 
-            # Step 7: If quality is too low, return with warning
+            # Step 6: If quality is too low, return with warning
             if quality['score'] < 30:
                 return {
                     'success': False,
@@ -299,10 +305,10 @@ class OCRService:
                     'error': '识别质量过低，请手动输入 / Recognition quality too low, please enter manually'
                 }
 
-            # Step 8: Detect certificate type
+            # Step 7: Detect certificate type
             cert_type = cls.detect_type(full_text)
 
-            # Step 9: Extract fields using LLM (with fallback to keyword matching)
+            # Step 8: Extract fields using LLM (with fallback to keyword matching)
             fields = {}
             title = None
             llm_used = False
@@ -339,6 +345,8 @@ class OCRService:
                 'title': title,
                 'confidence': quality,
                 'llm_used': llm_used,
+                'ocr_method': ocr_method,
+                'ocr_meta': vlm_meta,
             }
 
         except Exception as e:
