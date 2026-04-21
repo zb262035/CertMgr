@@ -1,17 +1,18 @@
 """Ollama VLM OCR Provider for certificate recognition.
 
 Uses local Ollama vision models (glm-ocr, qwen2.5vl) via REST API.
-Includes sips-based image preprocessing (macOS built-in, no Pillow needed).
+Uses Pillow for cross-platform image preprocessing (works on both macOS and Linux).
 """
 
 import os
 import re
 import json
 import base64
-import subprocess
 import tempfile
 import time
 from typing import Optional
+
+from PIL import Image
 
 import requests
 
@@ -56,8 +57,8 @@ def get_available_vlm_model() -> Optional[str]:
         return None
 
 
-def preprocess_image_sips(image_path: str, target_width: int = 1024) -> str:
-    """Preprocess image using macOS sips (no Pillow dependency).
+def preprocess_image_pillow(image_path: str, target_width: int = 1024) -> str:
+    """Preprocess image using Pillow (cross-platform).
 
     Resizes image to target_width while preserving aspect ratio.
     Saves as JPEG to a temp file.
@@ -65,57 +66,28 @@ def preprocess_image_sips(image_path: str, target_width: int = 1024) -> str:
     Returns:
         Path to preprocessed image (caller must clean up).
     """
-    img = _get_image_dimensions(image_path)
-    if img is None:
-        # Cannot read dimensions, return original
-        return image_path
-
-    orig_w, orig_h = img
-    if orig_w <= target_width:
-        # No need to resize, just convert to JPEG
-        out_path = image_path + ".sips.jpg"
-        subprocess.run(["sips", "-s", "format", "jpeg", image_path, "--out", out_path], check=False)
-        return out_path
-
-    out_fd, out_path = tempfile.mkstemp(suffix=".jpg")
-    os.close(out_fd)
-
-    # sips -Z sets the longest edge to given pixels
-    result = subprocess.run(
-        ["sips", "-Z", str(target_width), image_path, "--out", out_path],
-        capture_output=True, check=False
-    )
-    if result.returncode != 0:
-        # Fallback: return original path
-        try:
-            os.remove(out_path)
-        except:
-            pass
-        return image_path
-
-    return out_path
-
-
-def _get_image_dimensions(image_path: str) -> Optional[tuple]:
-    """Get image dimensions using sips."""
     try:
-        result = subprocess.run(
-            ["sips", "-g", "pixelWidth", "-g", "pixelHeight", image_path],
-            capture_output=True, text=True, check=False
-        )
-        if result.returncode != 0:
-            return None
-        w = h = None
-        for line in result.stdout.splitlines():
-            if "pixelWidth" in line:
-                w = int(line.split(":")[-1].strip())
-            if "pixelHeight" in line:
-                h = int(line.split(":")[-1].strip())
-        if w and h:
-            return (w, h)
-        return None
-    except:
-        return None
+        with Image.open(image_path) as img:
+            orig_w, orig_h = img.size
+            if orig_w <= target_width:
+                # No need to resize, just convert to JPEG
+                out_path = image_path + ".processed.jpg"
+                img.convert("RGB").save(out_path, "JPEG", quality=85)
+                return out_path
+
+            # Calculate new size maintaining aspect ratio
+            ratio = target_width / max(orig_w, orig_h)
+            new_size = (int(orig_w * ratio), int(orig_h * ratio))
+
+            # Resize and save
+            out_fd, out_path = tempfile.mkstemp(suffix=".jpg")
+            os.close(out_fd)
+            resized = img.convert("RGB").resize(new_size, Image.Resampling.LANCZOS)
+            resized.save(out_path, "JPEG", quality=85)
+            return out_path
+    except Exception:
+        # Fallback: return original path
+        return image_path
 
 
 def call_ollama_vision(model: str, image_path: str, timeout: int = 120) -> tuple[list[str], dict]:
@@ -194,7 +166,7 @@ class OllamaVLMOCR:
             return [], {"error": "Ollama VLM not available", "model": None, "elapsed": 0}
 
         # Preprocess
-        preprocessed = preprocess_image_sips(image_path, target_width=1024)
+        preprocessed = preprocess_image_pillow(image_path, target_width=1024)
         needs_cleanup = preprocessed != image_path
 
         try:

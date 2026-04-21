@@ -13,10 +13,10 @@ import requests
 OLLAMA_API = "http://localhost:11434/api/generate"
 
 # Default model for certificate field extraction
-DEFAULT_MODEL = "deepseek-r1:8b"
+DEFAULT_MODEL = "qwen2.5vl:7b"
 
 # Fallback model (faster for simple tasks)
-FALLBACK_MODEL = "deepseek-r1:8b"
+FALLBACK_MODEL = "qwen2.5vl:7b"
 
 # Seed schemas - only used when database has no CertificateType records
 SEED_CERTIFICATE_SCHEMAS = {
@@ -199,7 +199,7 @@ def extract_fields_with_llm(
                 "stream": False,
                 "options": {
                     "temperature": 0.1,  # Low temperature for consistent extraction
-                    "num_predict": 1024,  # More tokens for reasoning models
+                    "num_predict": 512,  # Sufficient for JSON output
                 }
             },
             timeout=120  # 2 minutes timeout for large models

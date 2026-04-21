@@ -4,37 +4,144 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<style>
+.batch-action-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+.batch-action-bar .selected-count {
+    font-weight: bold;
+    color: #0d6efd;
+}
+.cert-checkbox {
+    cursor: pointer;
+}
+.view-toggle {
+    display: flex;
+    gap: 0.25rem;
+}
+.view-toggle .btn {
+    padding: 0.25rem 0.5rem;
+}
+.view-toggle .btn.active {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+/* Table view styles */
+#certificates-table-view {
+    display: none;
+}
+#certificates-table-view table {
+    font-size: 0.9rem;
+}
+#certificates-table-view .table th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+#certificates-table-view .table td {
+    vertical-align: middle;
+}
+#certificates-table-view .cert-thumb {
+    width: 60px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+/* Card clickable styles */
+#certificates-container .card {
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+#certificates-container .card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+#certificates-container .view-cert-btn {
+    cursor: pointer;
+}
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>我的证书 / My Certificates</h1>
-    <div>
-        <a href="{{ url_for('certificates.upload') }}" class="btn btn-primary">
-            上传证书 / Upload
-        </a>
+    <h1>{% if current_user.is_school_admin() %}证书管理 / Certificate Management{% else %}我的证书 / My Certificates{% endif %}</h1>
+    <div class="d-flex gap-2 align-items-center">
+        {# View Toggle #}
+        <div class="view-toggle btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary active" id="btn-card-view" title="卡片视图 / Card View">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M4 4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4zm0 1h8a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/>
+                </svg>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="btn-list-view" title="列表视图 / List View">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+                </svg>
+            </button>
+        </div>
         {% if current_user.is_admin %}
         <a href="{{ url_for('certificates.import_batch') }}" class="btn btn-success">
             批量导入 / Batch Import
         </a>
         {% endif %}
+        <button type="button" class="btn btn-info" id="btn-export-excel">
+            <i class="bi bi-download"></i> 导出 Excel
+        </button>
     </div>
 </div>
+
+{# Batch Action Bar - Admin only #}
+{% if current_user.is_admin %}
+<div id="batch-action-bar" class="batch-action-bar">
+    <div class="selected-count">
+        已选择 <span id="selected-count">0</span> 个证书
+    </div>
+    <div class="btn-group">
+        <button type="button" id="btn-batch-select-all" class="btn btn-outline-primary btn-sm">
+            全选 / Select All
+        </button>
+        <button type="button" id="btn-batch-deselect" class="btn btn-outline-secondary btn-sm">
+            取消选择 / Deselect
+        </button>
+        <button type="button" id="btn-batch-delete" class="btn btn-danger btn-sm">
+            <i class="bi bi-trash"></i> 批量删除 / Delete
+        </button>
+    </div>
+    <div class="ms-auto text-muted small">
+        勾选证书后点击批量删除
+    </div>
+</div>
+{% endif %}
 
 {# Search and Filter Bar at top per user decision #}
 <div class="card mb-4">
     <div class="card-body">
         <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">搜索 / Search</label>
                 <input type="text" id="search-input" class="form-control" placeholder="搜索标题、类型... / Search title, type...">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">证书类型 / Certificate Type</label>
                 <select id="filter-type" class="form-select">
                     <option value="">全部 / All</option>
                 </select>
             </div>
+            {% if current_user.is_school_admin() %}
+            <div class="col-md-2">
+                <label class="form-label">部门 / Department</label>
+                <select id="filter-department" class="form-select">
+                    <option value="">全部部门 / All</option>
+                </select>
+            </div>
+            {% endif %}
             <div class="col-md-2">
                 <label class="form-label">从 / From</label>
                 <input type="date" id="filter-date-from" class="form-control">
@@ -63,6 +170,65 @@
     </thead>
 </table>
 
+{# Table View Container #}
+<div id="certificates-table-view" class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    {% if current_user.is_admin %}
+                    <th width="40"></th>
+                    {% endif %}
+                    <th width="80">预览</th>
+                    <th>标题</th>
+                    <th>类型</th>
+                    <th>持有人</th>
+                    <th>部门</th>
+                    <th>上传时间</th>
+                    <th width="120">操作</th>
+                </tr>
+            </thead>
+            <tbody id="certificates-tbody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# Export Modal #}
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">导出证书清单 / Export Certificate List</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">选择模板 / Select Template</label>
+                    <select id="export-template-select" class="form-select">
+                        <option value="">加载中... / Loading...</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">导出字段预览 / Export Fields Preview</label>
+                    <div id="export-fields-preview" class="border rounded p-2 bg-light">
+                        <small class="text-muted">请选择模板 / Please select a template</small>
+                    </div>
+                </div>
+                <div class="text-muted small">
+                    <i class="bi bi-info-circle"></i> 将导出当前筛选条件下的所有证书
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消 / Cancel</button>
+                <button type="button" class="btn btn-primary" id="btn-do-export">
+                    <i class="bi bi-download"></i> 导出 / Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {# DataTables with card rendering (per user decision: card layout) #}
 <div id="certificates-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
     {# Cards will be rendered here by DataTables #}
@@ -83,6 +249,17 @@ $(document).ready(function() {
             });
         });
 
+    // Load departments for filter (only for school admin)
+    {% if current_user.is_school_admin() %}
+    fetch('/admin/api/departments')
+        .then(r => r.json())
+        .then(data => {
+            data.forEach(dept => {
+                $('#filter-department').append(`<option value="${dept.id}">${dept.name}</option>`);
+            });
+        });
+    {% endif %}
+
     // Initialize DataTables with card rendering
     var table = $('#certificates-table').DataTable({
         ajax: {
@@ -93,6 +270,9 @@ $(document).ready(function() {
                 d.filter_type = $('#filter-type').val();
                 d.filter_date_from = $('#filter-date-from').val();
                 d.filter_date_to = $('#filter-date-to').val();
+                {% if current_user.is_school_admin() %}
+                d.filter_department = $('#filter-department').val();
+                {% endif %}
             }
         },
         serverSide: true,
@@ -121,8 +301,105 @@ $(document).ready(function() {
         drawCallback: function() {
             // Render cards from table data
             renderCertificateCards();
+            // Also render table view if visible
+            if ($('#certificates-table-view').is(':visible')) {
+                renderCertificateTable();
+            }
         }
     });
+
+    // View toggle
+    var currentView = 'card'; // or 'list'
+
+    function clearAllCheckboxes() {
+        // Clear checkboxes in both views
+        $('#certificates-container .cert-checkbox').prop('checked', false);
+        $('#certificates-tbody .cert-checkbox').prop('checked', false);
+        if (typeof updateSelectedCount === 'function') {
+            updateSelectedCount();
+        }
+    }
+
+    $('#btn-card-view').on('click', function() {
+        currentView = 'card';
+        $('#btn-card-view').addClass('active');
+        $('#btn-list-view').removeClass('active');
+        $('#certificates-container').show();
+        $('#certificates-table-view').hide();
+        clearAllCheckboxes();
+    });
+
+    $('#btn-list-view').on('click', function() {
+        currentView = 'list';
+        $('#btn-list-view').addClass('active');
+        $('#btn-card-view').removeClass('active');
+        $('#certificates-container').hide();
+        $('#certificates-table-view').show();
+        clearAllCheckboxes();
+        // Manually render table since DataTables might not have data yet
+        renderCertificateTable();
+    });
+
+    function renderCertificateTable() {
+        var tbody = $('#certificates-tbody');
+        tbody.empty();
+
+        var rows = table.rows().data();
+        console.log('[DEBUG] renderCertificateTable: rows count =', rows.length);
+        if (rows.length === 0) {
+            {% if current_user.is_admin %}
+            tbody.html('<tr><td colspan="8" class="text-center">暂无证书 / No certificates found</td></tr>');
+            {% else %}
+            tbody.html('<tr><td colspan="7" class="text-center">暂无证书 / No certificates found</td></tr>');
+            {% endif %}
+            return;
+        }
+
+        // Convert to array for consistent iteration
+        var rowsArray = rows.toArray();
+        console.log('[DEBUG] rowsArray length =', rowsArray.length);
+        rowsArray.forEach(function(cert) {
+            var imageHtml = '';
+            if (cert.file_mime_type && cert.file_mime_type.includes('image')) {
+                imageHtml = `<img src="/certificates/${cert.id}/file" class="cert-thumb" alt="${cert.title}">`;
+            } else {
+                imageHtml = '<div class="cert-thumb bg-secondary text-white d-flex align-items-center justify-content-center rounded"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/></svg></div>';
+            }
+
+            var date = cert.created_at ? cert.created_at.split('T')[0] : 'N/A';
+            var ownerName = cert.owner_name || cert.owner_email || 'N/A';
+            var deptName = cert.department_name || 'N/A';
+
+            {% if current_user.is_admin %}
+            var checkboxHtml = `<input class="form-check-input cert-checkbox" type="checkbox" value="${cert.id}" id="cert-${cert.id}">`;
+            var actionsHtml = `<a href="/certificates/${cert.id}" class="btn btn-sm btn-outline-primary">查看</a>
+                <a href="/certificates/${cert.id}/edit" class="btn btn-sm btn-outline-secondary">编辑</a>`;
+            var row = `<tr data-cert-id="${cert.id}">
+                <td>${checkboxHtml}</td>
+                <td>${imageHtml}</td>
+                <td class="text-truncate" style="max-width: 200px;" title="${cert.title}">${cert.title}</td>
+                <td><span class="badge bg-primary">${cert.type || 'Unknown'}</span></td>
+                <td>${ownerName}</td>
+                <td>${deptName}</td>
+                <td>${date}</td>
+                <td>${actionsHtml}</td>
+            </tr>`;
+            {% else %}
+            var actionsHtml = `<a href="/certificates/${cert.id}" class="btn btn-sm btn-outline-primary">查看</a>`;
+            var row = `<tr>
+                <td>${imageHtml}</td>
+                <td class="text-truncate" style="max-width: 200px;" title="${cert.title}">${cert.title}</td>
+                <td><span class="badge bg-primary">${cert.type || 'Unknown'}</span></td>
+                <td>${ownerName}</td>
+                <td>${deptName}</td>
+                <td>${date}</td>
+                <td>${actionsHtml}</td>
+            </tr>`;
+            {% endif %}
+
+            tbody.append(row);
+        });
+    }
 
     function renderCertificateCards() {
         var container = $('#certificates-container');
@@ -149,13 +426,27 @@ $(document).ready(function() {
             }
 
             var date = cert.created_at ? cert.created_at.split('T')[0] : 'N/A';
+            var owner = cert.owner_name || cert.owner_email || 'Unknown';
+            var dept = cert.department_name || 'Unknown';
+            {% if current_user.is_admin %}
+            var checkboxHtml = `<div class="form-check position-absolute top-0 start-0 m-2">
+                <input class="form-check-input cert-checkbox" type="checkbox" value="${cert.id}" id="cert-${cert.id}">
+            </div>`;
+            var cardClass = 'position-relative';
+            {% else %}
+            var checkboxHtml = '';
+            var cardClass = '';
+            {% endif %}
+
             var card = `<div class="col">
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm ${cardClass}">
+                    ${checkboxHtml}
                     ${imageHtml}
                     <div class="card-body">
                         <h5 class="card-title text-truncate" title="${cert.title}">${cert.title}</h5>
                         <p class="card-text"><span class="badge bg-primary">${cert.type || 'Unknown'}</span></p>
-                        <p class="card-text"><small class="text-muted">${date}</small></p>
+                        <p class="card-text"><small class="text-muted"><i class="bi bi-person"></i> ${owner}</small></p>
+                        <p class="card-text"><small class="text-muted"><i class="bi bi-building"></i> ${dept}</small></p>
                     </div>
                     <div class="card-footer bg-transparent">
                         <button type="button" class="btn btn-sm btn-outline-primary w-100 view-cert-btn" data-cert-id="${cert.id}">查看详情 / View</button>
@@ -180,9 +471,224 @@ $(document).ready(function() {
 
     // Event delegation for certificate card buttons
     $(document).on('click', '#certificates-container .view-cert-btn', function(e) {
+        e.preventDefault();
         var certId = $(this).data('cert-id');
         console.log('[DEBUG] Button click captured! certId:', certId);
-        window.location.href = '/certificates/' + certId;
+        if (certId) {
+            window.location.href = '/certificates/' + certId;
+        } else {
+            console.error('[ERROR] certId is undefined!');
+        }
+    });
+
+    // Debug: also handle click on entire card clickable area
+    $(document).on('click', '#certificates-container .card', function(e) {
+        // Don't trigger if clicking on button or checkbox
+        if ($(e.target).closest('.view-cert-btn, .cert-checkbox').length > 0) return;
+        var btn = $(this).find('.view-cert-btn');
+        if (btn.length > 0) {
+            var certId = btn.data('cert-id');
+            console.log('[DEBUG] Card click captured! certId:', certId);
+            window.location.href = '/certificates/' + certId;
+        }
+    });
+
+    // Batch action handlers (admin only)
+    {% if current_user.is_admin %}
+    function updateSelectedCount() {
+        // Count checked in both card view and table view
+        var cardCount = $('#certificates-container input.cert-checkbox:checked').length;
+        var tableCount = $('#certificates-tbody input.cert-checkbox:checked').length;
+        var count = cardCount + tableCount;
+        $('#selected-count').text(count);
+    }
+
+    // Checkbox change handler - delegate to both views
+    $(document).on('change', '.cert-checkbox', function() {
+        updateSelectedCount();
+    });
+
+    // Select all - selects based on current visible view
+    $('#btn-batch-select-all').on('click', function() {
+        if (currentView === 'card') {
+            $('#certificates-container .cert-checkbox').prop('checked', true);
+        } else {
+            $('#certificates-tbody .cert-checkbox').prop('checked', true);
+        }
+        updateSelectedCount();
+    });
+
+    // Deselect all
+    $('#btn-batch-deselect').on('click', function() {
+        clearAllCheckboxes();
+    });
+
+    // Batch delete
+    $('#btn-batch-delete').on('click', function() {
+        var selectedIds = [];
+        // Get from card view
+        $('#certificates-container input.cert-checkbox:checked').each(function() {
+            selectedIds.push(parseInt($(this).val()));
+        });
+        // Get from table view
+        $('#certificates-tbody input.cert-checkbox:checked').each(function() {
+            selectedIds.push(parseInt($(this).val()));
+        });
+
+        if (selectedIds.length === 0) {
+            alert('请先选择要删除的证书 / Please select certificates to delete');
+            return;
+        }
+
+        if (!confirm('确定要删除选中的 ' + selectedIds.length + ' 个证书吗？此操作不可撤销。\n\nConfirm delete ' + selectedIds.length + ' certificate(s)? This cannot be undone.')) {
+            return;
+        }
+
+        $.ajax({
+            url: '/certificates/api/batch-delete',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ids: selectedIds}),
+            success: function(response) {
+                if (response.success) {
+                    alert('成功删除 ' + response.deleted + ' 个证书 / Successfully deleted ' + response.deleted + ' certificates');
+                    // Reload the table
+                    table.ajax.reload();
+                    updateSelectedCount();
+                } else {
+                    alert('删除失败: ' + response.error);
+                }
+            },
+            error: function() {
+                alert('删除失败，请重试 / Delete failed, please try again');
+            }
+        });
+    });
+    {% endif %}
+
+    // ============================================================
+    // Export functionality (available to all users)
+    // ============================================================
+    var exportModal = null;
+    var currentTemplates = [];
+    var availableFields = [];
+
+    function loadExportTemplates() {
+        fetch('/certificates/api/export/templates')
+            .then(r => r.json())
+            .then(data => {
+                currentTemplates = data.templates || [];
+                availableFields = data.available_fields || [];
+                renderTemplateSelect();
+            })
+            .catch(err => {
+                console.error('Failed to load templates:', err);
+            });
+    }
+
+    function renderTemplateSelect() {
+        var select = $('#export-template-select');
+        select.empty();
+
+        if (currentTemplates.length === 0) {
+            select.html('<option value="">无可用模板 / No templates available</option>');
+            return;
+        }
+
+        currentTemplates.forEach(function(t) {
+            var label = t.name + (t.is_default ? ' (默认/default)' : '');
+            select.append(`<option value="${t.id}">${label}</option>`);
+        });
+
+        // Show fields preview for selected template
+        updateFieldsPreview();
+    }
+
+    function updateFieldsPreview() {
+        var selectedId = $('#export-template-select').val();
+        var template = currentTemplates.find(t => String(t.id) === String(selectedId));
+
+        var preview = $('#export-fields-preview');
+        if (!template || !template.fields) {
+            preview.html('<small class="text-muted">请选择模板 / Please select a template</small>');
+            return;
+        }
+
+        var html = '<div class="d-flex flex-wrap gap-1">';
+        template.fields.forEach(function(fieldKey) {
+            var field = availableFields.find(f => f.key === fieldKey);
+            var label = field ? field.label : fieldKey;
+            html += `<span class="badge bg-primary">${label}</span>`;
+        });
+        html += '</div>';
+        preview.html(html);
+    }
+
+    $('#btn-export-excel').on('click', function() {
+        if (!exportModal) {
+            exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
+        }
+        loadExportTemplates();
+        exportModal.show();
+    });
+
+    $('#export-template-select').on('change', function() {
+        updateFieldsPreview();
+    });
+
+    $('#btn-do-export').on('click', function() {
+        console.log('Export button clicked');
+        var templateId = $('#export-template-select').val();
+        console.log('Template ID:', templateId);
+
+        // Build URL with current filter params
+        var params = new URLSearchParams();
+        if (templateId) {
+            params.set('template_id', templateId);
+        }
+        params.set('search', $('#search-input').val());
+        params.set('filter_type', $('#filter-type').val());
+        {% if current_user.is_school_admin() %}
+        params.set('filter_department', $('#filter-department').val());
+        {% endif %}
+        params.set('filter_date_from', $('#filter-date-from').val());
+        params.set('filter_date_to', $('#filter-date-to').val());
+
+        // Close modal using Bootstrap API
+        var modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+        if (modal) {
+            modal.hide();
+        }
+
+        // Use fetch + blob for reliable file download
+        var exportUrl = '/certificates/api/export?' + params.toString();
+        console.log('Export URL:', exportUrl);
+
+        fetch(exportUrl)
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Export failed: ' + response.status);
+                }
+                return response.blob();
+            })
+            .then(function(blob) {
+                // Create download link and trigger click
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'certificates.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                // Cleanup
+                setTimeout(function() {
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                }, 100);
+            })
+            .catch(function(error) {
+                console.error('Export error:', error);
+                alert('导出失败，请重试 / Export failed, please try again');
+            });
     });
 });
 </script>

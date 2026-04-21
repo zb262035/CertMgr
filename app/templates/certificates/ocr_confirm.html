@@ -16,18 +16,14 @@
             <div class="row">
                 <div class="col-md-7">
                     <div class="mb-3">
-                        <label class="form-label">证书类型 *</label>
+                        <label class="form-label">证书类型 * / Certificate Type</label>
                         <select name="certificate_type" id="certificate_type" class="form-select" required>
-                            <option value="比赛获奖证书" {% if ocr_result.type == '比赛获奖证书' %}selected{% endif %}>比赛获奖证书</option>
-                            <option value="荣誉证书" {% if ocr_result.type == '荣誉证书' %}selected{% endif %}>荣誉证书</option>
-                            <option value="资格证" {% if ocr_result.type == '资格证' %}selected{% endif %}>资格证</option>
-                            <option value="职业技能等级证书" {% if ocr_result.type == '职业技能等级证书' %}selected{% endif %}>职业技能等级证书</option>
-                            <option value="特殊证书" {% if ocr_result.type == '特殊证书' %}selected{% endif %}>特殊证书</option>
+                            <option value="">加载中... / Loading...</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">证书标题 *</label>
+                        <label class="form-label">证书标题 * / Title</label>
                         <input type="text" name="title" id="title" class="form-control" required
                                value="{{ ocr_result.title or '' }}">
                     </div>
@@ -52,7 +48,7 @@
                         <small>{{ confidence_score|int }}% {% if confidence_score >= 80 %}(良好){% elif confidence_score >= 50 %}(一般){% else %}(需人工确认){% endif %}</small>
                         {% if confidence_issues %}
                         <div class="mt-2">
-                            <small class="text-muted"><strong>问题:</strong></small>
+                            <small class="text-muted"><strong>问题 / Issues:</strong></small>
                             <ul class="mb-0 mt-1" style="font-size: 0.85em;">
                             {% for issue in confidence_issues %}
                                 <li>{{ issue }}</li>
@@ -92,14 +88,108 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/schema-loader.js') }}"></script>
 <script>
-const FIELD_SCHEMAS = {{ FIELD_SCHEMAS|tojson }};
+// CR-01 fix: Use textContent to safely set values (prevents XSS)
+const OCR_FIELDS = {{ (ocr_result.fields if ocr_result else {})|tojson }};
+const OCR_TYPE_RAW = {{ (ocr_result.type|tojson) if ocr_result else 'null' }};
 
-document.addEventListener('DOMContentLoaded', function() {
+// OCR字段名到Schema字段名的映射（处理LLM提取的字段名不匹配问题）
+const OCR_FIELD_NAME_MAP = {
+    'contest': 'competition_name',
+    'competition': 'competition_name',
+    'level': 'award_level',
+    'award_level': 'award_level',
+    'no': 'certificate_number',
+    'certificate_no': 'certificate_number',
+    'date': 'award_date',
+    'award_date': 'award_date',
+    'organizer': 'organizer',
+    'grant_date': 'grant_date',
+    'grantor': 'grantor',
+    'issuing_authority': 'issuing_authority',
+    'issue_date': 'issue_date',
+    'expiry_date': 'expiry_date',
+    'skill_name': 'skill_name',
+    'skill_level': 'skill_level',
+    'certificate_name': 'certificate_name',
+    'honor_title': 'honor_title',
+    'reason': 'reason',
+};
+
+// 标准化OCR字段名
+function normalizeOcrFields(ocrFields) {
+    const normalized = {};
+    for (const [key, value] of Object.entries(ocrFields)) {
+        const mappedKey = OCR_FIELD_NAME_MAP[key] || key;
+        normalized[mappedKey] = value;
+    }
+    return normalized;
+}
+
+// Decode HTML entities in OCR_TYPE for safe display
+function decodeHtmlEntities(text) {
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+}
+const OCR_TYPE = OCR_TYPE_RAW ? decodeHtmlEntities(OCR_TYPE_RAW) : null;
+let currentSchema = [];
+let certTypeMap = {};
+let schemaLoadFailed = false;  // WR-01 fix: Track load failure
+
+document.addEventListener('DOMContentLoaded', async function() {
+    const select = document.getElementById('certificate_type');
+    select.innerHTML = '<option value="">加载中... / Loading...</option>';
+
+    // Load certificate types and populate dropdown
+    const types = await SchemaCache.loadCertTypes();
+
+    // WR-01 fix: Handle load failure
+    if (!types || types.length === 0) {
+        select.innerHTML = '<option value="">加载失败，请刷新重试 / Load failed, please refresh</option>';
+        return;
+    }
+
+    select.innerHTML = '';
+    certTypeMap = {};
+    types.forEach(t => {
+        certTypeMap[t.name] = t.id;
+        const option = document.createElement('option');
+        option.textContent = t.name;  // Safe: textContent escapes HTML
+        if (t.name === OCR_TYPE) option.selected = true;
+        select.appendChild(option);
+    });
+
+    // Add special certificate option if OCR detected something else
+    // IN-02 fix: Use bilingual format
+    if (OCR_TYPE && !certTypeMap[OCR_TYPE]) {
+        const option = document.createElement('option');
+        option.textContent = OCR_TYPE + ' (特殊/Special)';  // Safe + bilingual
+        option.selected = true;
+        select.insertBefore(option, select.firstChild);
+    }
+
     updateDynamicFields();
     document.getElementById('certificate_type').addEventListener('change', updateDynamicFields);
 
-    document.getElementById('ocr-confirm-form').addEventListener('submit', function() {
+    // WR-02 fix: Validate required fields before submit
+    document.getElementById('ocr-confirm-form').addEventListener('submit', function(e) {
+        // Check required fields in dynamic fields
+        const missingFields = [];
+        document.querySelectorAll('#dynamic-fields-container [required]').forEach(function(el) {
+            const fieldName = el.name ? el.name.replace('dynamic_', '') : el.id.replace('dynamic_', '');
+            if (!el.value || !el.value.trim()) {
+                missingFields.push(fieldName);
+            }
+        });
+
+        if (missingFields.length > 0) {
+            e.preventDefault();
+            alert('请填写以下必填字段 / Please fill in required fields: ' + missingFields.join(', '));
+            return false;
+        }
+
         // Collect dynamic fields before submit
         const fields = {};
         document.querySelectorAll('#dynamic-fields-container input, #dynamic-fields-container select, #dynamic-fields-container textarea').forEach(function(el) {
@@ -111,51 +201,37 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function updateDynamicFields() {
+async function updateDynamicFields() {
     const typeSelect = document.getElementById('certificate_type');
     const container = document.getElementById('dynamic-fields-container');
-    const selectedType = typeSelect.value;
-    const schema = FIELD_SCHEMAS[selectedType] || [];
+    const selectedTypeName = typeSelect.value;
 
-    container.innerHTML = '';
+    // WR-01 fix: Distinguish between "no schema" and "load failed"
+    schemaLoadFailed = false;
 
-    if (schema.length === 0) {
-        container.innerHTML = '<p class="text-muted">特殊证书类型，请手动填写所有字段 / Special certificate type, please fill in all fields manually</p>';
+    if (!selectedTypeName) {
+        container.innerHTML = '';
         return;
     }
 
-    // Pre-fill from OCR result
-    const ocrFields = {{ (ocr_result.fields if ocr_result else {})|tojson }};
+    currentSchema = await SchemaCache.getCertTypeSchema(selectedTypeName);
 
-    schema.forEach(function(field) {
-        const div = document.createElement('div');
-        div.className = 'mb-3';
+    // Check if load failed (returned null/undefined instead of empty array)
+    if (currentSchema === null) {
+        schemaLoadFailed = true;
+        container.innerHTML = '<p class="text-danger">字段加载失败，请重试或选择其他类型 / Field loading failed, please retry or select another type</p>';
+        return;
+    }
 
-        const existingValue = ocrFields[field.name] || '';
+    container.innerHTML = '';
 
-        let inputHtml = '';
-        if (field.type === 'select') {
-            inputHtml = `
-                <select class="form-select" name="dynamic_${field.name}" id="dynamic_${field.name}">
-                    <option value="">请选择 / Select</option>
-                    ${(field.options || []).map(function(opt) {
-                        const selected = existingValue === opt ? 'selected' : '';
-                        return `<option value="${opt}" ${selected}>${opt}</option>`;
-                    }).join('')}
-                </select>`;
-        } else if (field.type === 'text') {
-            inputHtml = `<textarea class="form-control" name="dynamic_${field.name}" id="dynamic_${field.name}" rows="2">${existingValue}</textarea>`;
-        } else if (field.type === 'date') {
-            inputHtml = `<input type="date" class="form-control" name="dynamic_${field.name}" id="dynamic_${field.name}" value="${existingValue}">`;
-        } else {
-            inputHtml = `<input type="text" class="form-control" name="dynamic_${field.name}" id="dynamic_${field.name}" value="${existingValue}">`;
-        }
+    if (!currentSchema || currentSchema.length === 0) {
+        container.innerHTML = '<p class="text-muted">此证书类型暂无字段定义，请手动填写 / No field definitions for this type, please fill in manually</p>';
+        return;
+    }
 
-        div.innerHTML = `
-            <label class="form-label">${field.label}${field.required ? ' *' : ''}</label>
-            ${inputHtml}`;
-        container.appendChild(div);
-    });
+    // Use the render function with OCR pre-filled values (normalized field names)
+    renderCertTypeFields(container, currentSchema, normalizeOcrFields(OCR_FIELDS));
 }
 </script>
 {% endblock %}
