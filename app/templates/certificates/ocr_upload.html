@@ -6,20 +6,87 @@
 <h1>OCR识别上传 / OCR Recognition Upload</h1>
 <p class="text-muted">上传证书图片或PDF，系统自动识别内容 / Upload certificate image or PDF, system automatically recognizes content</p>
 
-<div class="card mb-4">
+<!-- Batch Processing Panel -->
+<div id="batch-panel" class="card mb-4" style="display: none;">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-list-check"></i> 批量处理 / Batch Processing</span>
+        <span id="batch-progress-text">0 / 0</span>
+    </div>
     <div class="card-body">
-        <form method="POST" enctype="multipart/form-data" id="ocr-upload-form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div id="batch-progress" class="progress mb-3" style="height: 20px;">
+            <div id="batch-progress-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%">0%</div>
+        </div>
+        <div id="batch-status" class="alert alert-info">准备就绪 / Ready</div>
+
+        <!-- Current file confirmation -->
+        <div id="batch-confirm-area" class="mt-3" style="display: none;">
+            <h5>确认第 <span id="batch-current-num">1</span> 个文件: <span id="batch-current-filename"></span></h5>
+            <form id="batch-confirm-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" id="batch-cert-type" name="certificate_type" value="">
+                <input type="hidden" id="batch-title" name="title" value="">
+                <input type="hidden" id="batch-dynamic-fields" name="dynamic_fields_json" value="{}">
+                <input type="hidden" id="batch-stored-path" name="stored_path" value="">
+                <input type="hidden" id="batch-file-mime" name="file_mime_type" value="">
+                <input type="hidden" id="batch-original-filename" name="original_filename" value="">
+
+                <div class="row">
+                    <div class="col-md-7">
+                        <div class="mb-2">
+                            <label class="form-label">证书类型 / Certificate Type</label>
+                            <select id="batch-type-select" class="form-select"></select>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">标题 / Title</label>
+                            <input type="text" id="batch-title-input" class="form-control" required>
+                        </div>
+                        <div id="batch-dynamic-fields-area" class="border rounded p-2 mb-2 bg-light"></div>
+                    </div>
+                    <div class="col-md-5 text-center">
+                        <img id="batch-preview-img" src="" class="img-thumbnail" style="max-height: 150px;">
+                        <div id="batch-confidence" class="mt-2"></div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button type="button" id="batch-confirm-btn" class="btn btn-success">确认保存 / Confirm Save</button>
+                    <button type="button" id="batch-skip-btn" class="btn btn-outline-secondary">跳过此文件 / Skip</button>
+                    <button type="button" id="batch-cancel-btn" class="btn btn-outline-danger">取消批量 / Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Normal Upload Form -->
+<form method="POST" enctype="multipart/form-data" id="ocr-upload-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="batch_mode" id="batch-mode" value="0">
+    <div class="card mb-4">
+        <div class="card-body">
             <div class="mb-3">
-                <label class="form-label">证书文件 / Certificate File</label>
+                <label class="form-label">证书文件 / Certificate Files</label>
                 <input type="file" name="file" id="file-input" class="form-control"
-                       accept=".pdf,.png,.jpg,.jpeg,.gif" required>
-                <small class="text-muted">支持 PDF、图片格式（PNG, JPG, GIF）</small>
+                       accept=".pdf,.png,.jpg,.jpeg,.gif" multiple>
+                <small class="text-muted">支持 PDF、图片格式（PNG, JPG, GIF）。按住 Command 或 Shift 可多选文件</small>
+                <div id="file-count" class="text-muted small mt-1" style="display:none;"></div>
+            </div>
+
+            <!-- 拖拽上传区域 / Drag & Drop Area -->
+            <div id="drop-zone" class="border border-primary rounded p-4 text-center mb-3"
+                 style="border-style: dashed; border-width: 3px; background: #f8f9fa; cursor: pointer; transition: all 0.2s;"
+                 title="拖拽文件或文件夹到此处 / Drag files or folder here">
+                <div id="drop-zone-content">
+                    <p class="mb-1"><strong>拖拽文件到此处</strong></p>
+                    <p class="mb-1"><strong>Drag files here</strong></p>
+                    <small class="text-muted">或点击选择文件/文件夹 / or click to select files/folder</small>
+                </div>
+                <input type="file" id="drop-file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.gif" style="display:none;">
             </div>
 
             <div id="preview-container" class="mb-3" style="display: none;">
-                <label class="form-label">预览 / Preview</label>
-                <img id="preview-image" class="img-thumbnail" style="max-height: 300px;">
+                <label class="form-label">预览 / Preview (<span id="preview-count">0</span> files)</label>
+                <div id="preview-grid" class="d-flex flex-wrap gap-2"></div>
             </div>
 
             <div class="mb-3">
@@ -29,11 +96,26 @@
                 <div id="ocr-status" class="text-muted" style="display: none;"></div>
             </div>
 
-            <button type="submit" class="btn btn-primary" id="submit-btn">
-                上传并识别 / Upload and Recognize
-            </button>
-            <a href="{{ url_for('certificates.list') }}" class="btn btn-secondary">取消 / Cancel</a>
-        </form>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" id="submit-btn">
+                    上传并识别 / Upload and Recognize
+                </button>
+                <button type="button" id="btn-start-batch" class="btn btn-success" disabled>
+                    开始批量识别 / Start Batch (<span id="queue-count">0</span>)
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Batch queue -->
+<div id="batch-section" class="card mb-4" style="display: none;">
+    <div class="card-header">批量队列 / Batch Queue</div>
+    <div class="card-body">
+        <div id="queue-list" class="list-group mb-3"></div>
+        <button type="button" id="btn-clear-batch" class="btn btn-sm btn-outline-danger">
+            清空队列 / Clear Queue
+        </button>
     </div>
 </div>
 
@@ -44,53 +126,491 @@
             <li>确保证书图片清晰，光照均匀 / Ensure certificate image is clear with even lighting</li>
             <li>PDF文件只识别第一页 / PDF files only recognize the first page</li>
             <li>识别后请仔细核对信息是否正确 / Please carefully verify if the recognized information is correct</li>
+            <li>批量模式：拖拽或选择多个文件，然后点"开始批量识别"，逐个确认保存 / Batch mode: drag/select multiple files, click "Start Batch", confirm one by one</li>
         </ul>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/schema-loader.js') }}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+// Batch processing state
+let batchQueue = [];
+let currentBatchIndex = 0;
+let currentOcrResult = null;
+let batchTypesCache = null;
+
+document.addEventListener('DOMContentLoaded', async function() {
     const fileInput = document.getElementById('file-input');
     const previewContainer = document.getElementById('preview-container');
-    const previewImage = document.getElementById('preview-image');
+    const previewGrid = document.getElementById('preview-grid');
+    const previewCount = document.getElementById('preview-count');
     const form = document.getElementById('ocr-upload-form');
     const submitBtn = document.getElementById('submit-btn');
     const progress = document.getElementById('upload-progress');
     const status = document.getElementById('ocr-status');
+    const btnStartBatch = document.getElementById('btn-start-batch');
+    const btnClearBatch = document.getElementById('btn-clear-batch');
+    const batchSection = document.getElementById('batch-section');
+    const queueList = document.getElementById('queue-list');
+    const queueCount = document.getElementById('queue-count');
+    const batchModeInput = document.getElementById('batch-mode');
 
-    // Preview image on select
-    fileInput.addEventListener('change', function() {
-        const file = this.files[0];
-        if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewImage.src = e.target.result;
-                previewContainer.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
+    // ===== 拖拽上传功能 / Drag & Drop =====
+    const dropZone = document.getElementById('drop-zone');
+    const dropFileInput = document.getElementById('drop-file-input');
+
+    dropZone.addEventListener('click', function() {
+        dropFileInput.click();
+    });
+
+    dropZone.addEventListener('dblclick', function() {
+        dropFileInput.webkitdirectory = true;
+        dropFileInput.click();
+    });
+
+    dropZone.addEventListener('dragenter', function(e) {
+        e.preventDefault();
+        dropZone.classList.add('bg-primary');
+        dropZone.style.borderColor = '#0d6efd';
+        dropZone.style.transform = 'scale(1.02)';
+    });
+
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropZone.classList.add('bg-primary');
+        dropZone.style.borderColor = '#0d6efd';
+    });
+
+    dropZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        if (!dropZone.contains(e.relatedTarget)) {
+            dropZone.classList.remove('bg-primary');
+            dropZone.style.borderColor = '';
+            dropZone.style.transform = '';
+        }
+    });
+
+    dropZone.addEventListener('drageend', function(e) {
+        dropZone.classList.remove('bg-primary');
+        dropZone.style.borderColor = '';
+        dropZone.style.transform = '';
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('bg-primary');
+        dropZone.style.borderColor = '';
+        dropZone.style.transform = '';
+
+        const files = Array.from(e.dataTransfer.files);
+        const validExts = ['pdf', 'png', 'jpg', 'jpeg', 'gif'];
+        const validFiles = files.filter(f => {
+            const ext = f.name.split('.').pop().toLowerCase();
+            return validExts.includes(ext);
+        });
+
+        if (validFiles.length === 0) {
+            alert('没有有效的文件 / No valid files');
+            return;
+        }
+
+        let addedCount = 0;
+        for (const file of validFiles) {
+            if (!batchQueue.some(f => f.name === file.name && f.size === file.size)) {
+                batchQueue.push(file);
+                addedCount++;
+            }
+        }
+
+        if (addedCount > 0) {
+            renderQueue();
+            alert(`已添加 ${addedCount} 个文件到队列 / Added ${addedCount} files to queue`);
         } else {
+            alert('文件已在队列中 / Files already in queue');
+        }
+    });
+
+    dropFileInput.addEventListener('change', function() {
+        if (this.files.length === 0) return;
+
+        let addedCount = 0;
+        for (const file of this.files) {
+            if (!batchQueue.some(f => f.name === file.name && f.size === file.size)) {
+                batchQueue.push(file);
+                addedCount++;
+            }
+        }
+
+        if (addedCount > 0) {
+            renderQueue();
+        }
+
+        this.value = '';
+        this.webkitdirectory = false;
+    });
+
+    // ===== 原有文件选择功能 =====
+    fileInput.addEventListener('change', function() {
+        const fileCountDisplay = document.getElementById('file-count');
+
+        if (this.files.length > 0) {
+            const names = Array.from(this.files).map(f => f.name).join(', ');
+            fileCountDisplay.textContent = `已选 ${this.files.length} 个文件: ${names}`;
+            fileCountDisplay.style.display = 'block';
+
+            // Show previews for all selected image files
+            const previewGrid = document.getElementById('preview-grid');
+            const previewCount = document.getElementById('preview-count');
+            previewGrid.innerHTML = '';
+            let imageCount = 0;
+
+            Array.from(this.files).forEach((file, index) => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'img-thumbnail';
+                        img.style.maxHeight = '100px';
+                        img.style.maxWidth = '150px';
+                        img.title = file.name;
+                        previewGrid.appendChild(img);
+                        imageCount++;
+                        previewCount.textContent = imageCount;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Show container if there are images, otherwise hide
+            if (imageCount > 0) {
+                previewContainer.style.display = 'block';
+                previewCount.textContent = imageCount;
+            } else {
+                previewContainer.style.display = 'none';
+            }
+        } else {
+            fileCountDisplay.style.display = 'none';
             previewContainer.style.display = 'none';
         }
     });
 
-    // Show loading state on submit
-    form.addEventListener('submit', function() {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '识别中... / Recognizing...';
-        progress.style.display = 'block';
-        status.style.display = 'block';
-        status.textContent = '正在识别证书内容... / Recognizing certificate content...';
+    // Note: files are now added to queue via drag/drop or file input change events
+    // No need for separate "Add to Batch" button
 
-        // Animate progress bar
-        let width = 0;
-        const interval = setInterval(function() {
-            width += 10;
-            if (width > 90) clearInterval(interval);
-            progress.querySelector('.progress-bar').style.width = width + '%';
-        }, 300);
+    function renderQueue() {
+        queueList.innerHTML = '';
+        batchQueue.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center';
+            const isImage = file.type.startsWith('image/');
+            const icon = isImage ? '🖼️' : '📄';
+            item.innerHTML = `
+                <span><span class="me-2">${icon}</span>${file.name} <small class="text-muted">(${(file.size / 1024).toFixed(1)} KB)</small></span>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFromQueue(${index})">×</button>
+            `;
+            queueList.appendChild(item);
+        });
+        queueCount.textContent = batchQueue.length;
+        batchSection.style.display = batchQueue.length > 0 ? 'block' : 'none';
+        btnStartBatch.disabled = batchQueue.length === 0;
+    }
+
+    window.removeFromQueue = function(index) {
+        batchQueue.splice(index, 1);
+        renderQueue();
+    };
+
+    btnClearBatch.addEventListener('click', function() {
+        batchQueue = [];
+        renderQueue();
     });
+
+    // ===== Batch Processing =====
+    btnStartBatch.addEventListener('click', async function() {
+        if (batchQueue.length === 0) return;
+
+        // Hide normal form, show batch panel
+        document.getElementById('batch-panel').style.display = 'block';
+        document.getElementById('batch-section').style.display = 'none';
+
+        currentBatchIndex = 0;
+        await loadCertTypes();
+        processNextBatchFile();
+    });
+
+    async function loadCertTypes() {
+        if (batchTypesCache) return batchTypesCache;
+        batchTypesCache = await SchemaCache.loadCertTypes();
+        return batchTypesCache;
+    }
+
+    async function processNextBatchFile() {
+        if (currentBatchIndex >= batchQueue.length) {
+            // All files processed
+            batchComplete();
+            return;
+        }
+
+        const file = batchQueue[currentBatchIndex];
+        updateBatchProgress();
+
+        // Upload and OCR via AJAX - file upload must use FormData
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('batch_mode', '1');
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        if (!csrfToken) {
+            alert('CSRF token missing, please refresh the page');
+            return;
+        }
+
+        document.getElementById('batch-status').textContent = `正在识别: ${file.name}...`;
+        document.getElementById('batch-confirm-area').style.display = 'none';
+
+        try {
+            const response = await fetch('{{ url_for("certificates.ocr_upload") }}', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData
+            });
+
+            // Check for CSRF error or redirect
+            const contentType = response.headers.get('content-type');
+            if (!response.ok || (contentType && !contentType.includes('application/json'))) {
+                const text = await response.text();
+                console.error('Server response:', text.substring(0, 500));
+                throw new Error('Upload failed: ' + (response.status === 400 ? 'CSRF error' : response.statusText));
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                currentOcrResult = data.ocr_result;
+                showOcrConfirmation(file.name);
+            } else {
+                alert(`识别失败 / Recognition failed: ${data.error || 'Unknown error'}`);
+                // Skip this file and continue
+                currentBatchIndex++;
+                processNextBatchFile();
+            }
+        } catch (err) {
+            alert(`上传失败 / Upload failed: ${err.message}`);
+            currentBatchIndex++;
+            processNextBatchFile();
+        }
+    }
+
+    // Render dynamic fields for the selected certificate type
+    async function renderDynamicFieldsForType(typeName, currentValues) {
+        const dynamicFieldsArea = document.getElementById('batch-dynamic-fields-area');
+        if (!typeName) {
+            dynamicFieldsArea.innerHTML = '<p class="text-muted">请先选择证书类型 / Please select certificate type first</p>';
+            return;
+        }
+
+        const schema = await SchemaCache.getCertTypeSchema(typeName);
+        if (!schema || schema.length === 0) {
+            dynamicFieldsArea.innerHTML = '<p class="text-muted">该证书类型没有动态字段 / No dynamic fields for this type</p>';
+            return;
+        }
+
+        // Use the renderCertTypeFields function from schema-loader.js
+        dynamicFieldsArea.innerHTML = '';
+        renderCertTypeFields(dynamicFieldsArea, schema, currentValues);
+    }
+
+    // Listen for certificate type changes to update dynamic fields
+    document.getElementById('batch-type-select')?.addEventListener('change', function() {
+        renderDynamicFieldsForType(this.value, currentOcrResult?.fields || {});
+    });
+
+    function showOcrConfirmation(filename) {
+        const confirmArea = document.getElementById('batch-confirm-area');
+        const typeSelect = document.getElementById('batch-type-select');
+        const titleInput = document.getElementById('batch-title-input');
+        const previewImg = document.getElementById('batch-preview-img');
+        const confidenceDiv = document.getElementById('batch-confidence');
+        const dynamicFieldsArea = document.getElementById('batch-dynamic-fields-area');
+
+        document.getElementById('batch-current-num').textContent = currentBatchIndex + 1;
+        document.getElementById('batch-current-filename').textContent = filename;
+        document.getElementById('batch-status').textContent = '请确认信息 / Please confirm information';
+        confirmArea.style.display = 'block';
+
+        // Populate type select
+        typeSelect.innerHTML = '';
+        batchTypesCache.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.name;
+            opt.textContent = t.name;
+            if (t.name === currentOcrResult.type) opt.selected = true;
+            typeSelect.appendChild(opt);
+        });
+
+        // Pre-fill title
+        titleInput.value = currentOcrResult.title || '';
+
+        // Preview image
+        previewImg.src = `/certificates/uploads/${currentOcrResult.dated_folder}/${currentOcrResult.stored_filename}`;
+
+        // Confidence
+        const score = currentOcrResult.confidence?.score || 0;
+        const issues = currentOcrResult.confidence?.issues || [];
+        confidenceDiv.innerHTML = `
+            <div class="alert ${score >= 80 ? 'alert-success' : score >= 50 ? 'alert-warning' : 'alert-danger'} mb-0">
+                识别质量 / Quality: ${Math.floor(score)}%
+                ${issues.length ? '<br><small>' + issues.join(', ') + '</small>' : ''}
+            </div>
+        `;
+
+        // Dynamic fields - render based on selected certificate type
+        // Get schema for selected type and render fields
+        const selectedType = typeSelect.value;
+        renderDynamicFieldsForType(selectedType, currentOcrResult.fields || {});
+
+        // Store form data
+        document.getElementById('batch-stored-path').value = `${currentOcrResult.dated_folder}/${currentOcrResult.stored_filename}`;
+        document.getElementById('batch-file-mime').value = currentOcrResult.file_mime_type;
+        document.getElementById('batch-original-filename').value = currentOcrResult.filename;
+    }
+
+    document.getElementById('batch-confirm-btn').addEventListener('click', async function() {
+        const title = document.getElementById('batch-title-input').value;
+        const certType = document.getElementById('batch-type-select').value;
+
+        if (!title || !certType) {
+            alert('请填写标题和选择证书类型 / Please fill title and select certificate type');
+            return;
+        }
+
+        this.disabled = true;
+        this.textContent = '保存中... / Saving...';
+
+        try {
+            // Collect dynamic fields values
+            const dynamicFields = {};
+            const dynamicFieldsArea = document.getElementById('batch-dynamic-fields-area');
+            const dynamicInputs = dynamicFieldsArea.querySelectorAll('input, select, textarea');
+            dynamicInputs.forEach(input => {
+                if (input.name && input.name.startsWith('dynamic_')) {
+                    const fieldName = input.name.replace('dynamic_', '');
+                    dynamicFields[fieldName] = input.value;
+                }
+            });
+
+            const formData = new FormData();
+            // Only use header for CSRF, not in formData (avoid potential conflicts)
+            formData.append('title', title);
+            formData.append('certificate_type', certType);
+            formData.append('stored_path', document.getElementById('batch-stored-path').value);
+            formData.append('file_mime_type', document.getElementById('batch-file-mime').value);
+            formData.append('original_filename', document.getElementById('batch-original-filename').value);
+            formData.append('dynamic_fields_json', JSON.stringify(dynamicFields));
+            formData.append('batch_mode', '1');
+            formData.append('batch_index', currentBatchIndex);
+            formData.append('batch_total', batchQueue.length);
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            if (!csrfToken) {
+                alert('CSRF token missing, please refresh the page');
+                return;
+            }
+
+            const response = await fetch('{{ url_for("certificates.ocr_confirm") }}', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData
+            });
+
+            // Check for CSRF error or redirect
+            const contentType = response.headers.get('content-type');
+            if (!response.ok || (contentType && !contentType.includes('application/json'))) {
+                throw new Error('Save failed: ' + (response.status === 400 ? 'CSRF error' : response.statusText));
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                currentBatchIndex++;
+                document.getElementById('batch-confirm-btn').disabled = false;
+                document.getElementById('batch-confirm-btn').textContent = '确认保存 / Confirm Save';
+                processNextBatchFile();
+            } else {
+                alert(`保存失败 / Save failed: ${data.error || 'Unknown error'}`);
+                this.disabled = false;
+                this.textContent = '确认保存 / Confirm Save';
+            }
+        } catch (err) {
+            alert(`保存失败 / Save failed: ${err.message}`);
+            this.disabled = false;
+            this.textContent = '确认保存 / Confirm Save';
+        }
+    });
+
+    document.getElementById('batch-skip-btn').addEventListener('click', function() {
+        currentBatchIndex++;
+        processNextBatchFile();
+    });
+
+    document.getElementById('batch-cancel-btn').addEventListener('click', function() {
+        if (confirm('确定取消批量处理？/ Cancel batch processing?')) {
+            batchQueue = [];
+            document.getElementById('batch-panel').style.display = 'none';
+            renderQueue();
+        }
+    });
+
+    function updateBatchProgress() {
+        const total = batchQueue.length;
+        const current = currentBatchIndex + 1;
+        const percent = Math.round((currentBatchIndex / total) * 100);
+
+        document.getElementById('batch-progress-text').textContent = `${current} / ${total}`;
+        document.getElementById('batch-progress-bar').style.width = `${percent}%`;
+        document.getElementById('batch-progress-bar').textContent = `${percent}%`;
+    }
+
+    function batchComplete() {
+        document.getElementById('batch-status').textContent = `✅ 批量处理完成！共处理 ${batchQueue.length} 个文件 / Batch complete! Processed ${batchQueue.length} files`;
+        document.getElementById('batch-status').className = 'alert alert-success';
+        document.getElementById('batch-progress-bar').style.width = '100%';
+        document.getElementById('batch-progress-bar').textContent = '100%';
+        document.getElementById('batch-confirm-area').style.display = 'none';
+
+        // Show completion options
+        const confirmArea = document.getElementById('batch-confirm-area');
+        confirmArea.style.display = 'block';
+        confirmArea.innerHTML = `
+            <div class="text-center">
+                <h4>✅ 批量处理完成 / Batch Complete!</h4>
+                <p>已成功处理 ${batchQueue.length} 个证书文件<br>
+                ${batchQueue.length} certificate files processed successfully</p>
+                <a href="{{ url_for('certificates.list') }}" class="btn btn-primary">查看证书列表 / View Certificate List</a>
+                <button type="button" class="btn btn-success" onclick="startNewBatch()">继续批量上传 / Continue Batch Upload</button>
+            </div>
+        `;
+    }
+
+    window.startNewBatch = function() {
+        batchQueue = [];
+        currentBatchIndex = 0;
+        document.getElementById('batch-panel').style.display = 'none';
+        document.getElementById('batch-section').style.display = 'none';
+        document.getElementById('batch-status').className = 'alert alert-info';
+        document.getElementById('batch-confirm-area').style.display = 'none';
+        // Reset confirm area HTML
+        location.reload();
+    };
 });
 </script>
 {% endblock %}

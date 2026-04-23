@@ -163,6 +163,7 @@ This document lists all project documents and their purpose. All new or modified
 | 2026-04-14 | 添加 RETROSPECTIVE-ENGINEERING.md 工程复盘报告；更新 CLAUDE.md 添加规则 7-10；创建 ENGINEERING_IMPROVEMENT_PLAN.md；完善文档索引 | Claude |
 | 2026-04-17 | 完成 P0-P4 工程改进计划：权限服务、Service 层拆分、Flask-Migrate、单元测试（99个）、权限边界 API 测试（27个）、Docker 部署配置、生产配置加固 | Claude |
 | 2026-04-21 | OCR 优化：deepseek-r1:8b → qwen2.5vl:7b（速度 15-20s → 7-8s）；添加 OCR 字段名映射（LLM → schema）；sips → Pillow（跨平台）；修复非管理员导出功能；IMPROVEMENT_PLAN.md 添加 P3.3 OCR 速度优化待办 | Claude |
+| 2026-04-23 | 批量上传 OCR 功能修复：修复 `int is not defined`（改用 `Math.floor`）；修复 CSRF token 传递问题（移除 formData 中的重复 csrf_token）；修复预览只显示第一个文件（改为多文件缩略图网格）；添加动态字段渲染；简化流程移除多余的"加入队列"按钮 | Claude |
 
 ---
 

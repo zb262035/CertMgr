@@ -1,12 +1,12 @@
 """Certificate CRUD routes."""
 import os
-from flask import render_template, redirect, url_for, flash, send_file, abort, request, current_app, session
+from flask import render_template, redirect, url_for, flash, send_file, abort, request, current_app, session, jsonify
 from flask_login import login_required, current_user
-from app.extensions import db, csrf
+from app.extensions import db
 from app.models.certificate import Certificate
 from app.models.user import User
 from app.blueprints.certificates import certificates_bp
-from app.blueprints.certificates.forms import CertificateBaseForm, CertificateEditForm, FIELD_SCHEMAS
+from app.blueprints.certificates.forms import CertificateBaseForm, CertificateEditForm, get_field_label
 from app.blueprints.certificates.services import CertificateService, ExcelImportService
 from app.decorators import admin_required
 
@@ -47,7 +47,7 @@ def upload():
         except Exception as e:
             flash(f'上传失败 / Upload failed: {str(e)}', 'danger')
 
-    return render_template('certificates/upload.html', form=form, FIELD_SCHEMAS=FIELD_SCHEMAS)
+    return render_template('certificates/upload.html', form=form)
 
 
 @certificates_bp.route('/<int:cert_id>')
@@ -55,9 +55,13 @@ def upload():
 def detail(cert_id):
     """View certificate detail (edit/delete from here per user decision)."""
     certificate = Certificate.query.get_or_404(cert_id)
-    if not current_user.is_admin and certificate.user_id != current_user.id:
+    # Permission: school admin sees all, dept admin sees department certs, others see own
+    if not current_user.has_admin_role() and certificate.user_id != current_user.id:
         abort(403)
-    return render_template('certificates/detail.html', certificate=certificate)
+    # Dept admin can only see certificates from their department
+    if current_user.is_dept_admin() and certificate.owner.department_id != current_user.department_id:
+        abort(403)
+    return render_template('certificates/detail.html', certificate=certificate, get_field_label=get_field_label)
 
 
 @certificates_bp.route('/<int:cert_id>/edit', methods=['GET', 'POST'])
@@ -65,7 +69,11 @@ def detail(cert_id):
 def edit(cert_id):
     """Edit certificate."""
     certificate = Certificate.query.get_or_404(cert_id)
-    if not current_user.is_admin and certificate.user_id != current_user.id:
+    # Permission: school admin sees all, dept admin sees department certs, others see own
+    if not current_user.has_admin_role() and certificate.user_id != current_user.id:
+        abort(403)
+    # Dept admin can only edit certificates from their department
+    if current_user.is_dept_admin() and certificate.owner.department_id != current_user.department_id:
         abort(403)
 
     form = CertificateEditForm()
@@ -92,16 +100,19 @@ def edit(cert_id):
         form.title.data = certificate.title
         form.certificate_type_id.data = certificate.certificate_type_id
 
-    return render_template('certificates/edit.html', form=form, certificate=certificate, FIELD_SCHEMAS=FIELD_SCHEMAS)
+    return render_template('certificates/edit.html', form=form, certificate=certificate)
 
 
 @certificates_bp.route('/<int:cert_id>/delete', methods=['POST'])
 @login_required
-@csrf.exempt
 def delete(cert_id):
     """Delete certificate."""
     certificate = Certificate.query.get_or_404(cert_id)
-    if not current_user.is_admin and certificate.user_id != current_user.id:
+    # Permission: school admin sees all, dept admin sees department certs, others see own
+    if not current_user.has_admin_role() and certificate.user_id != current_user.id:
+        abort(403)
+    # Dept admin can only delete certificates from their department
+    if current_user.is_dept_admin() and certificate.owner.department_id != current_user.department_id:
         abort(403)
 
     try:
@@ -118,7 +129,11 @@ def delete(cert_id):
 def file(cert_id):
     """Serve certificate file."""
     certificate = Certificate.query.get_or_404(cert_id)
-    if not current_user.is_admin and certificate.user_id != current_user.id:
+    # Permission: school admin sees all, dept admin sees department certs, others see own
+    if not current_user.has_admin_role() and certificate.user_id != current_user.id:
+        abort(403)
+    # Dept admin can only access files from their department
+    if current_user.is_dept_admin() and certificate.owner.department_id != current_user.department_id:
         abort(403)
 
     file_full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], certificate.file_path)
@@ -137,7 +152,6 @@ def uploaded_file(folder, filename):
 
 @certificates_bp.route('/ocr/upload', methods=['GET', 'POST'])
 @login_required
-@csrf.exempt
 def ocr_upload():
     """OCR upload page - accepts certificate image/PDF, runs OCR, shows confirmation."""
     if request.method == 'GET':
@@ -164,7 +178,6 @@ def ocr_upload():
         # Save file with UUID filename for persistence
         import uuid
         from datetime import datetime
-        import shutil
 
         # Generate UUID-based filename
         cert_uuid = uuid.uuid4().hex
@@ -195,8 +208,27 @@ def ocr_upload():
             flash(result.get('error', 'OCR识别失败 / OCR recognition failed'), 'danger')
             return redirect(request.url)
 
-        # Store OCR result in session for confirmation
-        import json
+        # Check if batch mode (AJAX request)
+        batch_mode = request.form.get('batch_mode') == '1'
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Return JSON for batch processing
+            return jsonify({
+                'success': True,
+                'ocr_result': {
+                    'type': result['type'],
+                    'title': result['title'],
+                    'fields': result['fields'],
+                    'confidence': result.get('confidence', {}),
+                    'file_mime_type': file.content_type,
+                    'filename': file.filename,
+                    'stored_filename': stored_filename,
+                    'dated_folder': dated_folder,
+                },
+                'batch_mode': batch_mode
+            })
+
+        # Non-batch (regular form submit) - store in session and show confirm page
         session['ocr_result'] = {
             'type': result['type'],
             'title': result['title'],
@@ -206,14 +238,14 @@ def ocr_upload():
             'filename': file.filename,
             'stored_filename': stored_filename,
             'dated_folder': dated_folder,
+            'batch_mode': batch_mode,
         }
 
         return render_template('certificates/ocr_confirm.html',
                                ocr_result=result,
                                filename=file.filename,
                                stored_filename=stored_filename,
-                               dated_folder=dated_folder,
-                               FIELD_SCHEMAS=FIELD_SCHEMAS)
+                               dated_folder=dated_folder)
 
     except Exception as e:
         flash(f'处理失败 / Processing failed: {str(e)}', 'danger')
@@ -222,15 +254,68 @@ def ocr_upload():
 
 @certificates_bp.route('/ocr/confirm', methods=['POST'])
 @login_required
-@csrf.exempt
 def ocr_confirm():
     """Confirm OCR results and save certificate."""
     import json
+    from flask import jsonify
 
+    # Check if AJAX batch mode (data comes from request, not session)
+    is_batch_mode = request.form.get('batch_mode') == '1'
+
+    if is_batch_mode and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # AJAX batch mode - data directly in request
+        try:
+            title = request.form.get('title')
+            cert_type_name = request.form.get('certificate_type')
+            stored_path = request.form.get('stored_path', '')
+            file_mime_type = request.form.get('file_mime_type', '')
+            original_filename = request.form.get('original_filename', '')
+            dynamic_fields_json = request.form.get('dynamic_fields_json', '{}')
+            dynamic_fields = json.loads(dynamic_fields_json) if dynamic_fields_json else {}
+
+            if not title or not cert_type_name:
+                return jsonify({'success': False, 'error': 'Missing required fields'})
+
+            # Find certificate type
+            from app.models.certificate import CertificateType
+            cert_type = CertificateType.query.filter_by(name=cert_type_name).first()
+            if not cert_type:
+                return jsonify({'success': False, 'error': 'Certificate type not found'})
+
+            # Create certificate
+            certificate = Certificate(
+                user_id=current_user.id,
+                title=title,
+                certificate_type_id=cert_type.id,
+                file_path=stored_path,
+                original_filename=original_filename,
+                file_mime_type=file_mime_type,
+                fields=dynamic_fields
+            )
+            db.session.add(certificate)
+            db.session.commit()
+
+            batch_index = request.form.get('batch_index', type=int)
+            batch_total = request.form.get('batch_total', type=int)
+
+            return jsonify({
+                'success': True,
+                'cert_id': certificate.id,
+                'batch_index': batch_index,
+                'batch_total': batch_total
+            })
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)})
+
+    # Regular session-based confirmation
     ocr_result = session.get('ocr_result')
     if not ocr_result:
-        flash('会话过期，请重新上传 / Session expired, please upload again', 'warning')
-        return redirect(url_for('certificates.ocr_upload'))
+        # Check if it's a non-AJAX batch mode redirect
+        if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+            flash('会话过期，请重新上传 / Session expired, please upload again', 'warning')
+            return redirect(url_for('certificates.ocr_upload'))
+        return jsonify({'success': False, 'error': 'Session expired'})
 
     try:
         # Get form data
@@ -274,7 +359,6 @@ def ocr_confirm():
 @certificates_bp.route('/import', methods=['GET', 'POST'])
 @login_required
 @admin_required
-@csrf.exempt
 def import_batch():
     """Batch import certificates from Excel file (admin only).
 
